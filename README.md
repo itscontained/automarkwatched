@@ -19,6 +19,6 @@ Documentation hasnt started yet but will be hosted at [Read the Docs](http://ple
 
 Note: If you know how to use gunicorn and nginx, i have configs for both in the root dir. Will add to docs eventually 
 
-![Home Page](https://imgur.com/a/JeJQj "Home Page")
-![Bulk Edit](https://imgur.com/a/8qZgq "Bulk Edit")
-![Settings](https://imgur.com/a/6OzT6 "Settings")
+![Home Page](https://i.imgur.com/OO8RFnr.png "Home Page")
+![Bulk Edit](https://i.imgur.com/14FYTC7.png "Bulk Edit")
+![Settings](https://i.imgur.com/eBphkjw.png "Settings")
