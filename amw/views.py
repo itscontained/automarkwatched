@@ -43,7 +43,12 @@ class SettingsView(TemplateView):
         if ServerInfo.objects.count() > 0:
             self.initial = {'url': ServerInfo.objects.all()[0].url, 'token': ServerInfo.objects.all()[0].token}
         form = self.form_class(initial=self.initial)
-        return render(request, self.template_name, {'form': form})
+        context = {
+            'form': form,
+            'tvshows': TVShow.objects.all(),
+            'serverinfo': ServerInfo.objects.all()
+        }
+        return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         form = ServerForm(request.POST)

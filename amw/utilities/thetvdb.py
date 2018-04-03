@@ -31,5 +31,3 @@ class TheTVDB(object):
                     show.continuing = statuses[tvdbshowstatus]
                     show.save()
                     print('updated continuing status for {} to {}'.format(show.title, tvdbshowstatus))
-
-        messages.success(request, 'Success! TV show continuing status synced with TheTVDB')

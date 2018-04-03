@@ -25,9 +25,9 @@
  </form> 
  <div class="input-group row">
   <div class="col-sm-2">
-   <form action="/settings/filltable/" method="post">
+   <form {% if serverinfo %} action="/settings/filltable/" method="post" {% endif %}>
     {% csrf_token %}
-    <button type="submit" id="fill_table" class="btn btn-outline-dark">Populate</button>
+    <button type="submit" id="fill_table" class="btn btn-outline-dark {% if not serverinfo %} disabled {% endif %}">Populate</button>
    </form>
   </div>
   <div class="col-sm-10">
@@ -41,9 +41,9 @@
  </div>
  <div class="input-group row">
   <div class="col-sm-2">
-   <form action="/settings/synctvdb/" method="post">
+   <form {% if tvshows %} action="/settings/synctvdb/" method="post" {% endif %}>
     {% csrf_token %}
-    <button type="submit" id="synctvdb" class="btn btn-outline-dark">Sync</button>
+    <button type="submit" id="synctvdb" class="btn btn-outline-dark {% if not tvshows %} disabled {% endif %}">Sync</button>
    </form>
   </div>
   <div class="col-sm-8">
@@ -57,9 +57,9 @@
  </div>
  <div class="input-group row">
   <div class="col-sm-2">
-   <form action="/settings/markwatched/" method="post">
+   <form {% if serverinfo %} action="/settings/markwatched/" method="post" {% endif %}>
     {% csrf_token %}
-    <button type="submit" id="markwatched" class="btn btn-outline-dark">Mark Watched</button>
+    <button type="submit" id="markwatched" class="btn btn-outline-dark {% if not serverinfo %} disabled {% endif %}">Mark Watched</button>
    </form>
   </div>
   <div class="col-sm-8">
