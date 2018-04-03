@@ -10,12 +10,13 @@ Documentation hasnt started yet but will be hosted at [Read the Docs](http://ple
 # Quickstart
 (Until i have time to document in more detail)
 1. Git clone repo
-2. Generate secret_key `python3 generate_secret_key.py`
-3. Edit automarkwatched/settings.py
+2. install requirements `pip3 install -r requirements.txt`
+3. Generate secret_key `python3 generate_secret_key.py`
+4. Edit automarkwatched/settings.py
    * Add generated key to SECRET_KEY = '<here>'
    * Add ip addres or fqdn to ALLOWED_HOSTS
-4. Create database `python3 manage.py migrate`
-5. Run server `python3 manage.py runserver 0:8000`
+5. Create database `python3 manage.py migrate`
+6. Run server `python3 manage.py runserver 0:8000`
 
 Note: If you know how to use gunicorn and nginx, i have configs for both in the root dir. Will add to docs eventually 
 
