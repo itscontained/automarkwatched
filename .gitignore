@@ -3,5 +3,5 @@ __pycache__
 __pycache__/**
 .git
 .git/**
-settings.py
+*/settings.py
 
