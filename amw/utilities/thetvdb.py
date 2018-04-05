@@ -39,6 +39,6 @@ class TheTVDB(object):
                 if bannerurl:
                     if bannerurl != show.bannerurl:
                         show.bannerurl = bannerurl
-                        print('updated Banner URL for {}'format(show.title))
+                        print('updated Banner URL for {}'.format(show.title))
             else:
                 print('error pulling info for {}'.format(show.title))
