@@ -71,6 +71,21 @@ class ShowDetailView(TemplateView):
         context = { 'show': TVShow.objects.get(pk=show_pk) }
         return render(request, self.template_name, context)
 
+    def post(self, request, show_pk, *args, **kwargs):
+        show = TVShow.objects.get(pk=show_pk)
+
+        if show.silenced:
+            show.silenced = False
+            print('Unsilenced {}'.format(show.title))
+        else:
+            show.silenced = True
+            print('Silenced {}'.format(show.title))
+
+        show.save()
+
+        return HttpResponseRedirect('/{}'.format(show_pk))
+
+
 def filltable(request):
 
     if request.method == "POST":

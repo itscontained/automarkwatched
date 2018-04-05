@@ -16,7 +16,12 @@
    <button type="button" class="btn btn-outline-dark">PK ID</button>
    <button type="button" class="btn btn-dark" style="margin-right: 10pt;">{{ show.pk }}</button>
   </div>
+  <form action="" method="post" class="p-3">
+   {% csrf_token %}
+   <button type="submit" id="markonewatched" class="btn btn-outline-dark">{% if show.silenced %}Unsilence{% else %}Silence{% endif %}</button>
+  </form>
  </div>
 </div>
+
 {% endblock %}
 
