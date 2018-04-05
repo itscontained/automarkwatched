@@ -18,18 +18,19 @@ Documentation hasnt started yet but will be hosted at [Read the Docs](http://ple
 5. Create database `python3 manage.py migrate`
 6. Run server `python3 manage.py runserver 0:8000`
 
+Note: If you know how to use gunicorn and nginx, i have configs for both in the root dir. Will add to docs eventually 
+
 # Cronjobs
 To automatically run tasks currently you need to create cronjobs that run management commands (until I create a scheduler)  
 Example:  
 ```
 # m h  dom mon dow   command
-0 * * * * /usr/bin/python3 /opt/amw/manage.py filltable
+0 */12 * * * /usr/bin/python3 /opt/amw/manage.py filltable
 5 * * * * /usr/bin/python3 /opt/amw/manage.py markwatched
 30 0 1 * * /usr/bin/python3 /opt/amw/manage.py synctvdb
 ```
 
-Note: If you know how to use gunicorn and nginx, i have configs for both in the root dir. Will add to docs eventually 
-
+# Pictures
 ![Home Page](https://i.imgur.com/OO8RFnr.png "Home Page")
 ![Bulk Edit](https://i.imgur.com/14FYTC7.png "Bulk Edit")
 ![Settings](https://i.imgur.com/eBphkjw.png "Settings")
