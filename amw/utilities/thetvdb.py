@@ -27,7 +27,8 @@ class TheTVDB(object):
             if showinfo:
                 dbshowstatus = show.continuing
                 tvdbshowstatus = showinfo['status']
-                if dbshowstatus != statuses[tvdbshowstatus]:
-                    show.continuing = statuses[tvdbshowstatus]
-                    show.save()
-                    print('updated continuing status for {} to {}'.format(show.title, tvdbshowstatus))
+                if tvdbshowstatus:
+                    if dbshowstatus != statuses[tvdbshowstatus]:
+                        show.continuing = statuses[tvdbshowstatus]
+                        show.save()
+                        print('updated continuing status for {} to {}'.format(show.title, tvdbshowstatus))
