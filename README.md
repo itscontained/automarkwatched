@@ -30,7 +30,13 @@ Example:
 30 0 1 * * /usr/bin/python3 /opt/amw/manage.py synctvdb
 ```
 
+# Upgrades
+If a database field has been added you need to migrate the database to use the new features. Its as simple as:  
+`python3 manage.py migrate`  
+then restart the service
+
 # Pictures
 ![Home Page](https://i.imgur.com/OO8RFnr.png "Home Page")
 ![Bulk Edit](https://i.imgur.com/14FYTC7.png "Bulk Edit")
+![Show Detail](https://i.imgur.com/DTreE57.png "Show Detail")
 ![Settings](https://i.imgur.com/eBphkjw.png "Settings")
