@@ -29,7 +29,7 @@
     {% for show in tv_shows %}
     <tr>
      <td class="text-left col-md-auto">
-      {{ show.title }}
+      <a href="/{{ show.pk }}/" class="text-light nounderline">{{ show.title }}</a>
      </td>
      <td class="text-center col-md-auto text-danger">
       {% if show.silenced %}

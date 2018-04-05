@@ -8,6 +8,6 @@ urlpatterns = [
     path('settings/filltable/', views.filltable),
     path('settings/synctvdb/', views.syncTVDB),
     path('settings/markwatched/', views.markWatched),
-
+    path('<int:show_pk>/', views.ShowDetailView.as_view()),
 ]
 

@@ -64,6 +64,13 @@ class SettingsView(TemplateView):
             print('shit')
         return HttpResponseRedirect('/settings')
 
+class ShowDetailView(TemplateView):
+    template_name = "showdetail.html"
+
+    def get(self, request, show_pk, *args, **kwargs):
+        context = { 'show': TVShow.objects.get(pk=show_pk) }
+        return render(request, self.template_name, context)
+
 def filltable(request):
 
     if request.method == "POST":
