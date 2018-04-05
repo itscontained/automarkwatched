@@ -43,7 +43,6 @@ class SettingsView(TemplateView):
         if ServerInfo.objects.count() > 0:
             self.initial = {'url': ServerInfo.objects.all()[0].url, 'token': ServerInfo.objects.all()[0].token}
         form = self.form_class(initial=self.initial)
-        print(ServerInfo.objects.all()[0])
         context = {
             'form': form,
             'tvshows': TVShow.objects.all(),
