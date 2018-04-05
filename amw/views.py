@@ -40,13 +40,15 @@ class SettingsView(TemplateView):
     template_name = "settings.html"
 
     def get(self, request, *args, **kwargs):
+        serverinfo = ''
         if ServerInfo.objects.count() > 0:
-            self.initial = {'url': ServerInfo.objects.all()[0].url, 'token': ServerInfo.objects.all()[0].token}
+            serverinfo = ServerInfo.objects.all()[0]
+            self.initial = {'url': serverinfo.url, 'token': serverinfo.token}
         form = self.form_class(initial=self.initial)
         context = {
             'form': form,
             'tvshows': TVShow.objects.all(),
-            'serverinfo': ServerInfo.objects.all()[0]
+            'serverinfo': serverinfo
         }
         return render(request, self.template_name, context)
 
