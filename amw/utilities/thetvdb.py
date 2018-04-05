@@ -14,7 +14,10 @@ class TheTVDB(object):
 
     def getShowInfo(self, tvshow):
         g = requests.get('{}//series/{}'.format(self.apiurl, tvshow.tvdbid), headers=self.headers)
-        showinfo = g.json()['data']
+        if g.status_code != 200:
+            showinfo = ''
+        else:
+            showinfo = g.json()['data']
         return showinfo
 
     def syncShows(self):
@@ -32,3 +35,5 @@ class TheTVDB(object):
                         show.continuing = statuses[tvdbshowstatus]
                         show.save()
                         print('updated continuing status for {} to {}'.format(show.title, tvdbshowstatus))
+            else:
+                print('error pulling info for {}'.format(show.title))
