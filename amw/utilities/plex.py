@@ -4,6 +4,7 @@ from plexapi.server import PlexServer
 
 from ..models import TVShow, ServerInfo
 
+
 class Plex(object):
 
     def __init__(self):

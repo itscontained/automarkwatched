@@ -8,8 +8,9 @@ from .utilities import plex, thetvdb
 from .models import TVShow, ServerInfo
 from .forms import ServerForm
 
+
 class HomeView(ListView):
-    template_name = "home.html"
+    template_name = "amw/home.html"
     context_object_name = "tv_shows"
 
     def get_queryset(self):
@@ -37,7 +38,7 @@ class HomeView(ListView):
 class SettingsView(TemplateView):
     form_class = ServerForm
     initial = {'key': 'value'}
-    template_name = "settings.html"
+    template_name = "amw/settings.html"
 
     def get(self, request, *args, **kwargs):
         serverinfo = ''
@@ -65,7 +66,7 @@ class SettingsView(TemplateView):
         return HttpResponseRedirect('/settings')
 
 class ShowDetailView(TemplateView):
-    template_name = "showdetail.html"
+    template_name = "amw/showdetail.html"
 
     def get(self, request, show_pk, *args, **kwargs):
         context = { 'show': TVShow.objects.get(pk=show_pk) }

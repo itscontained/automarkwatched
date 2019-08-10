@@ -1,4 +1,4 @@
-automarkwatched.db
+
 __pycache__
 __pycache__/**
 .git
@@ -6,3 +6,4 @@ __pycache__/**
 */settings.py
 *.swp
 *.save
+/amw.db
