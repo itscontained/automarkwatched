@@ -3,13 +3,16 @@ from django.contrib import messages
 from django.shortcuts import render
 from django.views.generic import TemplateView, ListView
 from django.http import HttpResponseRedirect, HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .utilities import plex, thetvdb
-from .models import TVShow, ServerInfo
+from .models import TVShow, PlexMediaServer
 from .forms import ServerForm
 
 
-class HomeView(ListView):
+class HomeView(LoginRequiredMixin, ListView):
     template_name = "amw/home.html"
     context_object_name = "tv_shows"
 
@@ -35,35 +38,34 @@ class HomeView(ListView):
         return HttpResponseRedirect('/')
 
 
-class SettingsView(TemplateView):
+class SettingsView(LoginRequiredMixin, TemplateView):
     form_class = ServerForm
     initial = {'key': 'value'}
     template_name = "amw/settings.html"
 
     def get(self, request, *args, **kwargs):
-        serverinfo = ''
-        if ServerInfo.objects.count() > 0:
-            serverinfo = ServerInfo.objects.all()[0]
-            self.initial = {'url': serverinfo.url, 'token': serverinfo.token}
-        form = self.form_class(initial=self.initial)
+        plexuser = request.user.plexuser
+
+        form = self.form_class()
+        form.fields['servers'].choices = tuple(plexuser.servers.all().values_list())
+        form.initial['servers'] = plexuser.servers.all().filter(name=plexuser.current_server.name).values_list()[0][0]
         context = {
-            'form': form,
-            'tvshows': TVShow.objects.all(),
-            'serverinfo': serverinfo
+            'form': form
         }
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
+        print()
         form = ServerForm(request.POST)
-        if form.is_valid():
-            if ServerInfo.objects.count() > 0:
-                for server in ServerInfo.objects.all():
-                    server.delete()
-            server = ServerInfo(url=form.cleaned_data['url'], token=form.cleaned_data['token'])
-            server.save()
+        selected_server = PlexMediaServer.objects.get(pk=request.POST['servers'])
+        if request.user.plexuser.current_server != selected_server:
+            request.user.plexuser.current_server = selected_server
+            request.user.save()
+            messages.success(request, "Active PlexMediaServer successfully changed")
         else:
             print('shit')
         return HttpResponseRedirect('/settings')
+
 
 class ShowDetailView(TemplateView):
     template_name = "amw/showdetail.html"
@@ -90,11 +92,14 @@ class ShowDetailView(TemplateView):
 def filltable(request):
 
     if request.method == "POST":
-        server = plex.Plex()
-        server.rectify_show_list()
+        u = request.user.plexuser
+        p = plex.Plex(u.user, u.authenticationToken)
+        p.connect(u.current_server.name)
+        p.rectify_show_list()
         messages.success(request, 'Success! TV Show table populated!')
 
         return HttpResponseRedirect('/')
+
 
 def syncTVDB(request):
 
@@ -104,6 +109,7 @@ def syncTVDB(request):
         messages.success(request, 'Success! TV show continuing status synced with TheTVDB')
 
         return HttpResponseRedirect('/')
+
 
 def markWatched(request):
 

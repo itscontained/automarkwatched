@@ -9,15 +9,9 @@
   <div class="form-group row">  
    <div class="input-group col-sm-4">
     <div class="input-group-prepend">
-     <span class="input-group-text">Plex URL</span>
+     <span class="input-group-text">Plex Server</span>
     </div>
-    {{ form.url }}
-   </div>
-   <div class="input-group col-sm-4">
-    <div class="input-group-prepend">
-     <span class="input-group-text">Plex Token</span>
-    </div>
-    {{ form.token }}
+    {{ form.servers }}
    </div>
    {% csrf_token %}
    <input type="submit" id="save_server_info" class="btn btn-outline-dark" value="Save">
@@ -25,9 +19,9 @@
  </form> 
  <div class="input-group row">
   <div class="col-sm-2">
-   <form {% if serverinfo %} action="/settings/filltable/" method="post" {% endif %}>
+   <form action="/api/filltable/" method="post">
     {% csrf_token %}
-    <button type="submit" id="fill_table" class="btn btn-outline-dark {% if not serverinfo %} disabled {% endif %}">Populate</button>
+    <button type="submit" id="fill_table" class="btn btn-outline-dark">Populate</button>
    </form>
   </div>
   <div class="col-sm-10">

@@ -5,4 +5,5 @@ from django.conf.urls import include
 urlpatterns = [
     path('', include('amw.urls')),
     path('admin/', admin.site.urls),
+    path('user/', include('django.contrib.auth.urls'))
 ]
