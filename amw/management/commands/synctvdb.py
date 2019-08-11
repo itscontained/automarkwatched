@@ -8,7 +8,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         server = thetvdb.TheTVDB()
         try:
-            server.syncShows()
+            server.sync_shows()
             print(self.style.SUCCESS('Successfully synced all shows with TheTVDB'))
         except:
             CommandError('General Error')

@@ -1,30 +1,29 @@
 {% extends "amw/base.html" %}
 {% block content %}
-<div class="container p-3">
- <div class="text-center">
-  <img src="{{ show.bannerurl }}" class="img-fluid" alt="Show Banner">
- </div>
- <h1 class="text-center">{{ show.title }}</h1>
- <h2 class="text-center">Details</h1>
-</div>
-<div class="container p-3">
- <div class="text-center">
-  <div class="btn-group" role="group">
-   <button type="button" class="btn btn-outline-dark">Continuing</button>
-   <button type="button" class="btn {% if show.continuing %} btn-success {% else %} btn-danger {% endif %}" style="margin-right: 10pt;">{{ show.continuing }}</button>
-   <button type="button" class="btn btn-outline-dark">Silenced</button>
-   <button type="button" class="btn {% if show.silenced %} btn-success {% else %} btn-danger {% endif %}" style="margin-right: 10pt;">{{ show.silenced }}</button>
-   <button type="button" class="btn btn-outline-dark">TheTVDB ID</button>
-   <button type="button" class="btn btn-dark" style="margin-right: 10pt;">{{ show.tvdbid }}</button>
-   <button type="button" class="btn btn-outline-dark">PK ID</button>
-   <button type="button" class="btn btn-dark" style="margin-right: 10pt;">{{ show.pk }}</button>
-  </div>
-  <form action="" method="post" class="p-3">
-   {% csrf_token %}
-   <button type="submit" id="markonewatched" class="btn btn-outline-dark">{% if show.silenced %}Unsilence{% else %}Silence{% endif %}</button>
-  </form>
- </div>
-</div>
-
+    <div class="container p-3">
+        <div class="text-center">
+            <img src="https://www.thetvdb.com/banners/{{ show.banner_url }}" class="img-fluid" alt="Show Banner">
+        </div>
+        <h1 class="text-center">{{ show.title }}</h1>
+        <h2 class="text-center">Details</h2>
+    </div>
+    <div class="container p-3">
+        <div class="text-center">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-dark">Continuing</button>
+                <button type="button" class="btn {% if show.continuing %} btn-success {% else %} btn-danger {% endif %}" style="margin-right: 10pt;">{{ show.continuing }}</button>
+                <button type="button" class="btn btn-outline-dark">Silenced</button>
+                <button type="button" class="btn {% if show.silenced %} btn-success {% else %} btn-danger {% endif %}" style="margin-right: 10pt;">{{ show.silenced }}</button>
+                <button type="button" class="btn btn-outline-dark">TheTVDB ID</button>
+                <button type="button" class="btn btn-dark" style="margin-right: 10pt;">{{ show.tvdbid }}</button>
+                <button type="button" class="btn btn-outline-dark">PK ID</button>
+                <button type="button" class="btn btn-dark" style="margin-right: 10pt;">{{ show.pk }}</button>
+            </div>
+            <form action="" method="post" class="p-3">
+                {% csrf_token %}
+                <button type="submit" id="markonewatched" class="btn btn-outline-dark">{% if show.silenced %}Unsilence{% else %}Silence{% endif %}</button>
+            </form>
+        </div>
+    </div>
 {% endblock %}
 

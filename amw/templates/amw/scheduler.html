@@ -1,0 +1,55 @@
+{% extends "amw/base.html" %}
+{% block content %}
+    <div class="container p-3">
+        <h1 class="text-center">Scheduler</h1>
+    </div>
+    <div class="container p-3">
+        <form id="cron_populate" action="" method="post">
+            {% csrf_token %}
+            <div class="form-group row">
+                <div class="input-group col-sm-4">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Populate</span>
+                    </div>
+                    {{ form.cron_populate }}
+                </div>
+                <input type="submit" id="save_cron_populate" class="btn btn-outline-dark" value="Save">
+            </div>
+        </form>
+        <div class="row">
+            <div class="col">
+                <hr>
+            </div>
+        </div>
+        <form id="cron_sync" action="" method="post">
+            {% csrf_token %}
+            <div class="form-group row">
+                <div class="input-group col-sm-4">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Sync</span>
+                    </div>
+                    {{ form.cron_sync }}
+                </div>
+                <input type="submit" id="save_cron_sync" class="btn btn-outline-dark" value="Save">
+            </div>
+        </form>
+        <div class="row">
+            <div class="col">
+                <hr>
+            </div>
+        </div>
+        <form id="cron_mark_watched" action="" method="post">
+            {% csrf_token %}
+            <div class="form-group row">
+                <div class="input-group col-sm-4">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Mark Watched</span>
+                    </div>
+                    {{ form.cron_mark_watched }}
+                </div>
+                <input type="submit" id="save_cron_mark_watched" class="btn btn-outline-dark" value="Save">
+            </div>
+        </form>
+    </div>
+{% endblock %}
+

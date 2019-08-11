@@ -1,44 +1,41 @@
-import requests
+from requests import Session
 
 from django.contrib import messages
 
 from ..models import TVShow
 
+
 class TheTVDB(object):
+    baseurl = 'https://api.thetvdb.com'
 
-    def __init__(self):
-        amwapikey = {'apikey': '0E4FB4A79D7C3D09'}
-        self.apiurl = 'https://api.thetvdb.com'
-        self.token = requests.post('{}/login'.format(self.apiurl), json=amwapikey).json()['token']
-        self.headers = {'Authorization': 'Bearer {}'.format(self.token)}
+    def __init__(self, user):
+        self.user = user
+        self.session = Session()
+        payload = {'apikey': 'RSD94YQUFALZO3DZ'}
+        token = self.session.post(f"{TheTVDB.baseurl}/login", json=payload).json()['token']
+        self.session.headers.update({'Authorization': f'Bearer {token}'})
 
-    def getShowInfo(self, tvshow):
-        g = requests.get('{}//series/{}'.format(self.apiurl, tvshow.tvdbid), headers=self.headers)
-        if g.status_code != 200:
-            showinfo = ''
-        else:
-            showinfo = g.json()['data']
-        return showinfo
+    def get_show_info(self, tv_show):
+        g = self.session.get(f'{TheTVDB.baseurl}/series/{tv_show.tvdbid}')
+        return None if not g.ok else g.json()['data']
 
-    def syncShows(self):
-        for show in TVShow.objects.all():
+    def sync_shows(self):
+        for show in TVShow.objects.filter(user=self.user):
             statuses = {
                 'Continuing': True,
                 'Ended': False
             }
-            showinfo = self.getShowInfo(show)
+            showinfo = self.get_show_info(show)
             if showinfo:
-                dbshowstatus = show.continuing
-                tvdbshowstatus = showinfo['status']
-                bannerurl = showinfo['banner']
-                if tvdbshowstatus:
-                    if dbshowstatus != statuses[tvdbshowstatus]:
-                        show.continuing = statuses[tvdbshowstatus]
+                if showinfo.get('status'):
+                    if show.continuing != statuses[showinfo['status']]:
+                        show.continuing = statuses[showinfo['status']]
                         show.save()
-                        print('updated continuing status for {} to {}'.format(show.title, tvdbshowstatus))
-                if bannerurl:
-                    if bannerurl != show.bannerurl:
-                        show.bannerurl = bannerurl
-                        print('updated Banner URL for {}'.format(show.title))
+                        print(f"Updated continuing status for {show.title} to {showinfo['status']}")
+                if showinfo['banner']:
+                    if show.banner_url != showinfo['banner']:
+                        show.banner_url = showinfo['banner']
+                        show.save()
+                        print(f"updated Banner URL for {show.title}")
             else:
-                print('error pulling info for {}'.format(show.title))
+                print(f"error pulling info for {show.title}")
