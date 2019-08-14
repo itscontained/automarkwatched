@@ -50,7 +50,7 @@
         </div>
         <div class="input-group row">
             <div class="col-sm-2">
-                <form {% if tv_shows %} action="/api/markwatched/" method="post" {% endif %}>
+                <form action="/api/markwatched/" method="post">
                     {% csrf_token %}
                     <button type="submit" id="markwatched" class="btn btn-outline-dark">Mark Watched</button>
                 </form>
