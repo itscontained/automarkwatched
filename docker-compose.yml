@@ -1,0 +1,10 @@
+  automarkwatched:
+    container_name: automarkwatched
+    hostname: automarkwatched
+    image: itscontained/automarkwatched:latest
+    volumes:
+      - /opt/dockerconfigs/automarkwatched/data:/app/data
+      - /opt/dockerconfigs/automarkwatched/static_files:/app/static_files
+    ports:
+      - 8000:8000
+    restart: unless-stopped

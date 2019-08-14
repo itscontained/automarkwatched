@@ -14,5 +14,6 @@ RUN apk add --no-cache tzdata && \
     pip install --no-cache-dir -r /app/requirements.txt
 
 VOLUME /data
+VOLUME /static_files
 
 CMD ./start.sh
