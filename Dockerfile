@@ -4,7 +4,7 @@ LABEL maintainers="dirtycajunrice"
 
 WORKDIR /app
 
-COPY /requirements.txt /manage.py /shart.sh /app/
+COPY /requirements.txt /manage.py /start.sh /app/
 
 COPY /amw /app/amw
 
