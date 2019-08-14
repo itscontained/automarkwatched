@@ -4,8 +4,10 @@
 echo Migrating database...
 ./manage.py migrate
 
+# Collect static files
 echo Collecting static files...
 ./manage.py collectstatic
+
 # Start Gunicorn processes
 echo Starting Gunicorn webserver...
 exec gunicorn automarkwatched.wsgi \
