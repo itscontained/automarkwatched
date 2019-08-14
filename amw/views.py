@@ -149,8 +149,9 @@ def sync_tvdb(request):
 
 def mark_watched(request):
     if request.method == "POST":
-        server = plex.Plex(request.user.username, request.user.plexuser.authenticationToken)
-        server.mark_watched()
+        p = plex.Plex(request.user.username, request.user.plexuser.authenticationToken)
+        p.connect(request.user.plexuser.current_server.name)
+        p.mark_watched()
         messages.success(request, 'Success! TV shows have been marked watched')
 
         return HttpResponseRedirect('/settings')

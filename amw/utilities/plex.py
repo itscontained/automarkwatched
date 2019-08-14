@@ -35,4 +35,3 @@ class Plex(object):
             if episode.grandparentTitle in silenced_show_list:
                 print(f"marking {episode.title} from {episode.grandparentTitle} watched")
                 episode.markWatched()
-
