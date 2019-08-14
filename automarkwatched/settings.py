@@ -2,8 +2,8 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '35dN6fkB7q+Pbt=J2g_YDs9o4x@)$AeHC&!anc1OZFlpimL#*X'
-DEBUG = True
-ALLOWED_HOSTS = []
+DEBUG = False
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'amw.apps.AmwConfig',
