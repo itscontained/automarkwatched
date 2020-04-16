@@ -16,4 +16,4 @@ RUN apk add --no-cache tzdata && \
 VOLUME /data
 VOLUME /static_files
 
-CMD ./start.sh
+ENTRYPOINT ["./start.sh"]
