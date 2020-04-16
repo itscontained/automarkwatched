@@ -9,8 +9,5 @@ echo Collecting static files...
 ./manage.py collectstatic
 
 # Start Gunicorn processes
-echo Starting Gunicorn webserver...
-exec gunicorn automarkwatched.wsgi \
-     --bind 0.0.0.0:8000 \
-     --workers 3 \
-     --timeout 300
+echo Starting webserver...
+exec runserver 0:8000
