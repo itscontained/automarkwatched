@@ -4,11 +4,11 @@ LABEL maintainers="dirtycajunrice"
 
 WORKDIR /app
 
-COPY /requirements.txt /manage.py /start.sh /app/
+COPY /python/requirements.txt /manage.py /start.sh /app/
 
-COPY /amw /app/amw
+COPY /python/amw /app/amw
 
-COPY /automarkwatched /app/automarkwatched
+COPY /python/automarkwatched /app/automarkwatched
 
 RUN apk add --no-cache tzdata && \
     pip install --no-cache-dir -r /app/requirements.txt

@@ -7,8 +7,9 @@ class AmwConfig(AppConfig):
 
     def ready(self):
         from django.db.utils import OperationalError
-        from amw.utilities import plex, thetvdb
-        from amw.scheduler import Scheduler
+        from python.amw.utilities import plex
+        from python.amw.utilities import thetvdb
+        from python.amw import Scheduler
         from django.contrib.auth.models import User
 
         scheduler = Scheduler()

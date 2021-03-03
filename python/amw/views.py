@@ -1,10 +1,7 @@
-from django.views import View
 from django.contrib import messages
 from django.shortcuts import render
 from django.views.generic import TemplateView, ListView
-from django.http import HttpResponseRedirect, HttpResponse
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .utilities import plex, thetvdb

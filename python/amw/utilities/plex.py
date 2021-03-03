@@ -1,6 +1,4 @@
-from django.contrib import messages
-
-from amw.models import TVShow
+from python.amw import TVShow
 from plexapi.myplex import MyPlexAccount
 from django.contrib.auth.models import User
 
