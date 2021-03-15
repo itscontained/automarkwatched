@@ -1,8 +1,0 @@
-__pycache__
-__pycache__/**
-.git
-.git/**
-*/settings.py
-*.swp
-*.save
-python/data/amw.db
