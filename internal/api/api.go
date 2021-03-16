@@ -119,7 +119,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 func getUser(w http.ResponseWriter, r *http.Request) {
 	token, _ := r.Context().Value("plexAuthToken").(string)
 	newUser := v1.NewUser(token)
-	if err := newUser.Sync(); err != nil {
+	if err := newUser.SyncUser(); err != nil {
 		render.JSON(w, r, err)
 		return
 	}
@@ -177,7 +177,7 @@ func UserContext(next http.Handler) http.Handler {
 		if user == nil {
 			token, _ := r.Context().Value("plexAuthToken").(string)
 			newUser := v1.NewUser(token)
-			if err := newUser.Sync(); err != nil {
+			if err := newUser.SyncUser(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -187,7 +187,7 @@ func UserContext(next http.Handler) http.Handler {
 				return
 			}
 			savedUser.AuthToken = token
-			if err := savedUser.Sync(); err != nil {
+			if err := savedUser.SyncUser(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

@@ -55,7 +55,7 @@ func Start() {
 		r.With(api.TokenContext).With(api.UserContext).Get("/", index)
 		r.Get("/static/*", static)
 	})
-	templates, err = template.New("base").ParseGlob("web/templates/*.gotmpl")
+	templates, err = template.New("base").ParseGlob("web/dist/templates/*.tmpl")
 	if err != nil {
 		l.WithError(err).Error("could not parse templates")
 	}
