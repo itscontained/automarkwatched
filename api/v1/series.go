@@ -3,16 +3,17 @@ package v1
 import (
 	"sort"
 
-	"github.com/itscontained/automarkwatched/pkg/provider/plex"
+	"github.com/DirtyCajunRice/go-plex"
 )
 
 // Series is a wrapper struct for a plex.Series
 type Series struct {
 	*plex.Series
-	Enabled                 bool     `db:"enabled"`
-	ServerMachineIdentifier string   `db:"server_machine_identifier"`
-	LibraryUUID             string   `db:"library_uuid"`
-	Library                 *Library `json:"-" db:"-"`
+	Enabled                 bool        `db:"enabled"`
+	ServerMachineIdentifier string      `db:"server_machine_identifier"`
+	LibraryUUID             string      `db:"library_uuid"`
+	Library                 *Library    `json:"-" db:"-"`
+	UserSeries              *UserSeries `json:"-" db:"-"`
 }
 
 func (s *Series) AttachLibrary(library *Library) {
@@ -48,10 +49,6 @@ func (s *Series) comparePlexSeries(s2 *plex.Series) bool {
 		updated = true
 	}
 	return updated
-}
-
-func (us *UserServer) SyncLibraries() error {
-	return us.Server.SyncLibraries()
 }
 
 func (ul *UserLibrary) SyncSeries() error {

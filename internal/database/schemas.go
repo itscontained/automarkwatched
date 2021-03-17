@@ -3,7 +3,9 @@ package database
 const (
 	appSchema = `
 CREATE TABLE IF NOT EXISTS app (
-	identifier VARCHAR(80) PRIMARY KEY
+	identifier VARCHAR(80) PRIMARY KEY,
+	owner_id INTEGER DEFAULT 0,
+	version VARCHAR(80)
 );`
 	userSchema = `
 CREATE TABLE IF NOT EXISTS users (

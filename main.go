@@ -6,9 +6,9 @@ import (
 	"github.com/itscontained/automarkwatched/internal/api"
 	"github.com/itscontained/automarkwatched/internal/config"
 	"github.com/itscontained/automarkwatched/internal/database"
+	"github.com/itscontained/automarkwatched/internal/plex"
 	"github.com/itscontained/automarkwatched/internal/routines"
 	"github.com/itscontained/automarkwatched/internal/ui"
-	"github.com/itscontained/automarkwatched/pkg/provider/plex"
 )
 
 func main() {
@@ -17,8 +17,11 @@ func main() {
 
 	database.Init()
 
-	plex.Product = config.App.Name
-	plex.ClientIdentifier = config.App.Identifier
+	if err := database.DB.GetAppConfig(); err != nil {
+		log.Error(err)
+	}
+
+	plex.Setup(config.App.Name, config.App.Identifier)
 
 	api.Start()
 	ui.Start()

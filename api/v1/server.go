@@ -1,58 +1,20 @@
 package v1
 
 import (
-	"fmt"
-
-	"github.com/itscontained/automarkwatched/internal/config"
-	"github.com/itscontained/automarkwatched/pkg/provider/plex"
+	"github.com/DirtyCajunRice/go-plex"
 )
 
-// Server is a distinct plex server
+// Server is an app config wrapper for a plex.Server
 type Server struct {
 	*plex.Server
-	Enabled   bool                `json:"enabled" db:"enabled"`
-	Libraries map[string]*Library `json:"-" db:"-"`
-}
-
-func (s *Server) URL() string {
-	return fmt.Sprintf("%s://%s:%d", s.Scheme, s.Host, s.Port)
-}
-
-func (s *Server) AttachLibrary(library *Library) error {
-	err := s.AttachPlexLibrary(library.Library)
-	if err != nil && err != ErrNoAppOwner {
-		return err
-	}
-	s.Libraries[library.UUID].Enabled = library.Enabled
-	s.Libraries[library.UUID].AttachServer(s)
-	return nil
-}
-
-func (s *Server) AttachPlexLibrary(library *plex.Library) error {
-	if config.App.OwnerID == 0 {
-		return ErrNoAppOwner
-	}
-	if s.Libraries == nil {
-		s.Libraries = make(map[string]*Library)
-	}
-	if _, ok := s.Libraries[library.UUID]; !ok {
-		s.Libraries[library.UUID] = &Library{
-			Library:                 library,
-			ServerMachineIdentifier: s.MachineIdentifier,
-			Enabled:                 true,
-			Server:                  s,
-		}
-		return nil
-	}
-	s.Libraries[library.UUID].comparePlexLibrary(library)
-	return nil
+	Enabled bool `json:"enabled" db:"enabled"`
 }
 
 func (s *Server) SyncLibraries() error {
-	if s.AccessToken != "" {
+	if s.AccessToken == "" {
 		return ErrNoUserAccessToken
 	}
-	libraries, err := plex.GetTVLibraries(s.URL(), s.AccessToken)
+	libraries, err := s.Server.Libraries()
 	if err != nil {
 		return err
 	}
@@ -105,4 +67,18 @@ func (s *Server) comparePlexServer(s2 *plex.Server) bool {
 		updated = true
 	}
 	return updated
+}
+
+// UserServer holds per User app config for a Server
+type UserServer struct {
+	UserID                  int     `db:"user_id" goqu:"skipupdate"`
+	ServerMachineIdentifier string  `db:"server_machine_identifier" goqu:"skipupdate"`
+	AccessToken             string  `db:"access_token"`
+	Enabled                 bool    `db:"enabled"`
+	User                    *User   `json:"-" db:"-"`
+	Server                  *Server `json:"-" db:"-"`
+}
+
+func (s *UserServer) URL() string {
+	return s.Server.URL()
 }

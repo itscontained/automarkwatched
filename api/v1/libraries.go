@@ -1,26 +1,35 @@
 package v1
 
 import (
+	"github.com/DirtyCajunRice/go-plex"
+
 	"github.com/itscontained/automarkwatched/internal/config"
-	"github.com/itscontained/automarkwatched/pkg/provider/plex"
 )
 
 // Library is a wrapper struct for a plex.Library
 type Library struct {
 	*plex.Library
-	ServerMachineIdentifier string          `db:"server_machine_identifier" goqu:"skipupdate"`
-	Enabled                 bool            `json:"enabled" db:"enabled"`
-	Series                  map[int]*Series `json:"-" db:"-"`
-	Server                  *Server         `json:"-" db:"-"`
+	ServerMachineIdentifier string `db:"server_machine_identifier" goqu:"skipupdate"`
+	Enabled                 bool   `json:"enabled" db:"enabled"`
 }
 
-func (l *Library) AttachServer(server *Server) {
-	l.Server = server
-	l.ServerMachineIdentifier = server.MachineIdentifier
+// UserLibrary holds per User config of a Library
+type UserLibrary struct {
+	UserID      int      `json:"user_id" db:"user_id"`
+	LibraryUUID string   `json:"library_uuid" db:"library_uuid"`
+	Enabled     bool     `json:"enabled" db:"enabled"`
+	User        *User    `json:"-" db:"-"`
+	Library     *Library `json:"-" db:"-"`
 }
 
-func (l *Library) AttachSeries(series *Series) error {
-	err := l.AttachPlexSeries(series.Series)
+// AttachUserServer adds the UserServer pointer to the Library struct
+func (l *Library) AttachUserServer(userServer *UserServer) {
+	l.Server = userServer
+	l.ServerMachineIdentifier = userServer.Server.MachineIdentifier
+}
+
+func (l *Library) AttachUserSeries(userSeries *UserSeries) error {
+	err := l.AttachPlexSeries(s.Series)
 	if err != nil && err != ErrNoAppOwner {
 		return err
 	}

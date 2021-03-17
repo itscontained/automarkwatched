@@ -92,7 +92,18 @@ func setup(w http.ResponseWriter, _ *http.Request) {
 
 func index(w http.ResponseWriter, r *http.Request) {
 	user := api.GetContextUser(r)
-	userSeries := api.GetAll(user)
+	if err := user.GetRecursive(); err != nil {
+		log.Error(err)
+		return
+	}
+	userSeries, err := user.MergeUserSeries(api.GetUserSeries(user))
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	for s := range userSeries {
+		log.Printf("%+v", userSeries[s].Series.Title)
+	}
 	data := map[string]interface{}{
 		"user":       user,
 		"userSeries": userSeries,
