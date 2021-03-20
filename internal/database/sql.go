@@ -1,10 +1,6 @@
 package database
 
 import (
-	"errors"
-	"fmt"
-	"reflect"
-
 	"github.com/doug-martin/goqu/v9"
 	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
@@ -43,11 +39,8 @@ func Init() {
 	DB.Sqlx.MustExec(appSchema)
 	DB.Sqlx.MustExec(userSchema)
 	DB.Sqlx.MustExec(serverSchema)
-	DB.Sqlx.MustExec(userServerSchema)
 	DB.Sqlx.MustExec(librarySchema)
-	DB.Sqlx.MustExec(userLibrarySchema)
 	DB.Sqlx.MustExec(seriesSchema)
-	DB.Sqlx.MustExec(userSeriesSchema)
 }
 
 func Close() {
@@ -91,25 +84,34 @@ func (db *database) GetUser(id int) *v1.User {
 	return &u
 }
 
-func (db *database) GetUsers() (users []v1.User, err error) {
-	err = db.Goqu.From("users").ScanStructs(&users)
-	return
+func (db *database) GetUsers() (map[int]*v1.User, error) {
+	var users []*v1.User
+	err := db.Goqu.From("users").ScanStructs(&users)
+	if err != nil {
+		return nil, err
+	}
+	u := make(map[int]*v1.User)
+	for i := range users {
+		u[users[i].ID] = users[i]
+	}
+	return u, nil
 }
 
-func (db *database) AddUser(user v1.User) (err error) {
+func (db *database) AddUser(user *v1.User) (err error) {
 	_, err = db.Goqu.Insert("users").Rows(user).Executor().Exec()
 	return
 }
 
-func (db *database) UpdateUser(user v1.User) (err error) {
+func (db *database) UpdateUser(user *v1.User) (err error) {
 	_, err = db.Goqu.Update("users").Set(user).Where(goqu.Ex{"id": user.ID}).Executor().Exec()
 	return
 }
 
 // server methods
-func (db *database) GetServer(machineIdentifier string) *v1.Server {
+func (db *database) GetServer(user *v1.User, machineIdentifier string) *v1.Server {
 	var s v1.Server
-	ok, err := db.Goqu.From("servers").Where(goqu.Ex{"machine_identifier": machineIdentifier}).ScanStruct(&s)
+	ex := goqu.Ex{"machine_identifier": machineIdentifier, "user_id": user.ID}
+	ok, err := db.Goqu.From("servers").Where(ex).ScanStruct(&s)
 	if !ok || err != nil {
 		log.WithField("machine_identifier", machineIdentifier).Error("could not get server from database")
 		return nil
@@ -117,87 +119,42 @@ func (db *database) GetServer(machineIdentifier string) *v1.Server {
 	return &s
 }
 
-func (db *database) GetServers() (map[string]*v1.Server, error) {
+func (db *database) GetServers(user *v1.User) (map[string]*v1.Server, error) {
 	servers := make([]*v1.Server, 0)
-	if err := db.Goqu.From("servers").ScanStructs(&servers); err != nil {
+	if err := db.Goqu.From("servers").Where(goqu.Ex{"user_id": user.ID}).ScanStructs(&servers); err != nil {
 		return nil, err
 	}
 	serverMap := make(map[string]*v1.Server)
-	for _, v := range servers {
-		serverMap[v.MachineIdentifier] = v
+	for i := range servers {
+		serverMap[servers[i].MachineIdentifier] = servers[i]
 	}
 	return serverMap, nil
 }
 
-func (db *database) AddServers(servers map[string]*v1.Server) {
+func (db *database) AddServers(servers map[string]*v1.Server) error {
 	var s []*v1.Server
 	for i := range servers {
 		s = append(s, servers[i])
 	}
 	_, err := db.Goqu.Insert("servers").Rows(s).Executor().Exec()
 	if err != nil {
-		log.WithError(err).Error("problem adding servers to database")
+		return err
 	}
+	return nil
 }
 
 func (db *database) UpdateServer(server *v1.Server) {
-	ex := goqu.Ex{"machine_identifier": server.MachineIdentifier}
+	ex := goqu.Ex{"machine_identifier": server.MachineIdentifier, "user_id": server.UserID}
 	_, err := db.Goqu.Update("servers").Set(server).Where(ex).Executor().Exec()
 	if err != nil {
 		log.WithError(err).Error("problem updating server in database")
 	}
 }
 
-// user server methods
-func (db *database) GetUserServer(user *v1.User, machineIdentifier string) *v1.UserServer {
-	ex := goqu.Ex{"user_id": user.ID, "server_machine_identifier": machineIdentifier}
-	var userServer v1.UserServer
-	ok, err := db.Goqu.From("user_servers").Where(ex).ScanStruct(&userServer)
-	if !ok || err != nil {
-		log.WithFields(log.Fields{
-			"user_id":                   user.ID,
-			"server_machine_identifier": machineIdentifier,
-		}).Error("could not get user server from database")
-		return nil
-	}
-	return &userServer
-}
-
-func (db *database) GetUserServers(UserID int) map[string]*v1.UserServer {
-	userServers := make([]*v1.UserServer, 0)
-	err := db.Goqu.From("user_servers").Where(goqu.Ex{"user_id": UserID}).ScanStructs(&userServers)
-	if err != nil {
-		log.WithError(err).Error("problem getting user servers")
-		return nil
-	}
-	userServerMap := make(map[string]*v1.UserServer)
-	for i := range userServers {
-		userServerMap[userServers[i].ServerMachineIdentifier] = userServers[i]
-	}
-	return userServerMap
-}
-
-func (db *database) AddUserServers(userServers map[string]*v1.UserServer) {
-	var us []*v1.UserServer
-	for i := range userServers {
-		us = append(us, userServers[i])
-	}
-	_, err := db.Goqu.Insert("user_servers").Rows(us).Executor().Exec()
-	if err != nil {
-		log.WithError(err).Error("problem adding user servers to database")
-	}
-}
-
-func (db *database) UpdateUserServer(userServer v1.UserServer) (err error) {
-	ex := goqu.Ex{"user_id": userServer.UserID, "server_machine_identifier": userServer.ServerMachineIdentifier}
-	_, err = db.Goqu.Update("user_servers").Set(userServer).Where(ex).Executor().Exec()
-	return
-}
-
 // library methods
-func (db *database) GetLibrary(uuid string) *v1.Library {
+func (db *database) GetLibrary(user *v1.User, uuid string) *v1.Library {
 	var library v1.Library
-	ok, err := db.Goqu.From("libraries").Where(goqu.Ex{"uuid": uuid}).ScanStruct(&library)
+	ok, err := db.Goqu.From("libraries").Where(goqu.Ex{"uuid": uuid, "user_id": user.ID}).ScanStruct(&library)
 	if !ok || err != nil {
 		log.WithField("uuid", uuid).Error("could not get library from database")
 		return nil
@@ -205,87 +162,44 @@ func (db *database) GetLibrary(uuid string) *v1.Library {
 	return &library
 }
 
-func (db *database) GetLibraries() map[string]*v1.Library {
+func (db *database) GetLibraries(user *v1.User) (map[string]*v1.Library, error) {
 	libraries := make([]*v1.Library, 0)
-	err := db.Goqu.From("libraries").ScanStructs(&libraries)
+	err := db.Goqu.From("libraries").Where(goqu.Ex{"user_id": user.ID}).ScanStructs(&libraries)
 	if err != nil {
-		log.WithError(err).Error("problem getting libraries from database")
+		return nil, err
 	}
 	libraryMap := make(map[string]*v1.Library)
 	for i := range libraries {
 		libraryMap[libraries[i].UUID] = libraries[i]
 	}
-	return libraryMap
+	return libraryMap, nil
 }
 
-func (db *database) AddLibraries(libraries map[string]*v1.Library) {
+func (db *database) AddLibraries(libraries map[string]*v1.Library) error {
 	var l []*v1.Library
 	for i := range libraries {
 		l = append(l, libraries[i])
 	}
 	_, err := db.Goqu.Insert("libraries").Rows(l).Executor().Exec()
 	if err != nil {
-		log.WithError(err).Error("problem adding library to database")
+		return err
 	}
-	return
+	return nil
 }
 
 func (db *database) UpdateLibrary(library *v1.Library) {
-	_, err := db.Goqu.Update("libraries").Set(library).Where(goqu.Ex{"uuid": library.UUID}).Executor().Exec()
+	ex := goqu.Ex{"uuid": library.UUID, "user_id": library.UserID}
+	_, err := db.Goqu.Update("libraries").Set(library).Where(ex).Executor().Exec()
 	if err != nil {
 		log.WithError(err).Error("problem updating libraries in database")
 	}
 	return
 }
 
-// user library methods
-func (db *database) GetUserLibrary(UserID int, machineIdentifier, uuid string) (userLibrary *v1.UserLibrary, ok bool, err error) {
-	ex := goqu.Ex{"user_id": UserID, "server_machine_identifier": machineIdentifier, "library_uuid": uuid}
-	ok, err = db.Goqu.From("user_libraries").Where(ex).ScanStruct(&userLibrary)
-	return
-}
-
-func (db *database) GetUserLibraries(user *v1.User) map[string]*v1.UserLibrary {
-	var ul []*v1.UserLibrary
-	err := db.Goqu.From("user_libraries").Where(goqu.Ex{"user_id": user.ID}).ScanStructs(&ul)
-	if err != nil {
-		log.WithError(err).Error("problem getting user libraries from database")
-		return nil
-	}
-	userLibraries := make(map[string]*v1.UserLibrary)
-	for i := range ul {
-		userLibraries[ul[i].LibraryUUID] = ul[i]
-	}
-	return userLibraries
-}
-
-func (db *database) AddUserLibraries(userlibraries map[string]*v1.UserLibrary) {
-	var ul []*v1.UserLibrary
-	for i := range userlibraries {
-		ul = append(ul, userlibraries[i])
-	}
-	_, err := db.Goqu.Insert("user_libraries").Rows(ul).Executor().Exec()
-	if err != nil {
-		log.WithError(err).Error("problem adding user library to database")
-	}
-}
-
-func (db *database) UpdateUserLibrary(userLibrary *v1.UserLibrary) {
-	ex := goqu.Ex{
-		"user_id":                   userLibrary.UserID,
-		"server_machine_identifier": userLibrary.ServerMachineIdentifier,
-		"library_uuid":              userLibrary.LibraryUUID,
-	}
-	_, err := db.Goqu.Update("user_libraries").Set(userLibrary).Where(ex).Executor().Exec()
-	if err != nil {
-		log.WithError(err).Error("problem updating user library in database")
-	}
-}
-
 // series methods
-func (db *database) GetOneSeries(ratingKey int) *v1.Series {
+func (db *database) GetOneSeries(user *v1.User, ratingKey int) *v1.Series {
 	var series v1.Series
-	ok, err := db.Goqu.From("series").Where(goqu.Ex{"rating_key": ratingKey}).ScanStruct(&series)
+	ok, err := db.Goqu.From("series").Where(goqu.Ex{"rating_key": ratingKey, "user_id": user.ID}).ScanStruct(&series)
 	if !ok || err != nil {
 		log.WithField("rating_key", ratingKey).Error("could not get a series from database")
 		return nil
@@ -293,68 +207,59 @@ func (db *database) GetOneSeries(ratingKey int) *v1.Series {
 	return &series
 }
 
-func (db *database) GetSeries() map[int]*v1.Series {
+func (db *database) AddSeries(series map[int]*v1.Series) error {
+	for i := range series {
+		_, err := db.Goqu.Insert("series").Rows(series[i]).Executor().Exec()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (db *database) GetSeries(user *v1.User) (map[int]*v1.Series, error) {
 	var series []*v1.Series
-	err := db.Goqu.From("series").ScanStructs(&series)
+	err := db.Goqu.From("series").Where(goqu.Ex{"user_id": user.ID}).ScanStructs(&series)
 	if err != nil {
-		log.WithError(err).Error("problem getting series in database")
-		return nil
+		return nil, err
 	}
 	s := make(map[int]*v1.Series)
 	for i := range series {
 		s[series[i].RatingKey] = series[i]
 	}
-	return s
+	return s, nil
 }
 
-func (db *database) GetUserSeries(user *v1.User) map[int]*v1.UserSeries {
-	var userSeries []*v1.UserSeries
-	err := db.Goqu.From("user_series").Where(goqu.Ex{"user_id": user.ID}).ScanStructs(&userSeries)
+func (db *database) GetSeriesScrobbled(user *v1.User) (map[int]*v1.Series, error) {
+	var s []*v1.Series
+	err := db.Goqu.From("series").Where(goqu.Ex{"user_id": user.ID, "scrobble": true}).ScanStructs(&s)
 	if err != nil {
-		log.WithError(err).Error("problem getting user series from database")
-		return nil
+		return nil, err
 	}
-	us := make(map[int]*v1.UserSeries)
-	for i := range userSeries {
-		us[userSeries[i].SeriesRatingKey] = userSeries[i]
+	series := make(map[int]*v1.Series)
+	for i := range s {
+		series[s[i].RatingKey] = s[i]
 	}
-	return us
+	return series, nil
 }
 
-func (db *database) GetUserSeriesScrobbled(id int) (userSeries []v1.UserSeries, err error) {
-	err = db.Goqu.From("user_series").Where(goqu.Ex{"user_id": id, "scrobble": true}).ScanStructs(&userSeries)
-	return
-}
-
-func (db *database) AddUserSeries(userSeries map[int]*v1.UserSeries) {
-	for i := range userSeries {
-		_, err := db.Goqu.Insert("user_series").Rows(userSeries[i]).Executor().Exec()
-		if err != nil {
-			log.WithError(err).Error("problem adding user series to database")
-		}
-	}
-}
-
-func (db *database) UpdateOneUserSeriesScrobble(user *v1.User, ratingKey int, scrobble bool) {
-	where := goqu.Ex{"user_id": user.ID, "series_rating_key": ratingKey}
-	_, err := db.Goqu.Update("user_series").Where(where).Set(goqu.Record{"scrobble": scrobble}).Executor().Exec()
+func (db *database) UpdateOneSeriesScrobble(user *v1.User, ratingKey int, scrobble bool) {
+	where := goqu.Ex{"user_id": user.ID, "rating_key": ratingKey}
+	_, err := db.Goqu.Update("series").Where(where).Set(goqu.Record{"scrobble": scrobble}).Executor().Exec()
 	if err != nil {
 		log.WithError(err).Error("problem updating user series scrobble in database")
 	}
 }
 
-func (db *database) Update(table string, s interface{}) (err error) {
-	v := reflect.ValueOf(s)
-	fmt.Printf("%#v\n", v)
-	q, _, _ := db.Goqu.Update("app").Set(v).ToSQL()
-	log.Print(q)
-	_, err = db.Goqu.Update(table).Set(v).Executor().Exec()
-	return
-}
-
-func (db *database) UpdateToSQL(table string, s interface{}) (statement string) {
-	statement, _, _ = db.Goqu.Update(table).Set(s).ToSQL()
-	return
+func (db *database) UpdateSeriesScrobble(user *v1.User, ratingKeys []int, scrobble bool) error {
+	for i := range ratingKeys {
+		where := goqu.Ex{"user_id": user.ID, "rating_key": ratingKeys[i]}
+		_, err := db.Goqu.Update("series").Where(where).Set(goqu.Record{"scrobble": scrobble}).Executor().Exec()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (db *database) UpdateAppConfig() (err error) {
@@ -362,33 +267,9 @@ func (db *database) UpdateAppConfig() (err error) {
 	return
 }
 
-func (db *database) AddSeries(series map[int]*v1.Series) {
-	for i := range series {
-		_, err := db.Goqu.Insert("series").Rows(series[i]).Executor().Exec()
-		if err != nil {
-			log.WithError(err).Error("problem adding series to database")
-		}
-	}
-}
-
 func (db *database) UpdateSeries(series *v1.Series) {
-	_, err := db.Goqu.Update("series").Set(series).Where(goqu.Ex{"ratingKey": series.RatingKey}).Executor().Exec()
+	_, err := db.Goqu.Update("series").Set(series).Where(goqu.Ex{"rating_key": series.RatingKey}).Executor().Exec()
 	if err != nil {
 		log.WithError(err).Error("problem updating series in database")
 	}
-}
-
-func (db *database) UpdateUserSeries(user v1.User, series []v1.Series) (err error) {
-	errorCount := 0
-	for _, s := range series {
-		err = db.Update("user_series", s)
-		if err != nil {
-			log.WithError(err).Error("could not update scrobble state")
-			errorCount++
-		}
-	}
-	if errorCount > 0 {
-		err = errors.New(fmt.Sprintf("could not update %d/%d scrobble states", errorCount, len(series)))
-	}
-	return
 }

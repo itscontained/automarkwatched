@@ -2,11 +2,11 @@ package v1
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/DirtyCajunRice/go-plex"
 
 	"github.com/itscontained/automarkwatched/internal/config"
-	px "github.com/itscontained/automarkwatched/internal/plex"
 )
 
 var (
@@ -14,18 +14,34 @@ var (
 	ErrNoUserAuthToken     = errors.New("auth token not set")
 	ErrNoUserAccessToken   = errors.New("access token not set")
 	ErrNoAppOwner          = errors.New("app owner not set")
-	App = px.App
+	App                    *plex.App
 )
 
 // User is a wrapper struct for a plex.User
 type User struct {
-	*plex.User
-	Owner   bool               		`json:"owner" db:"owner" goqu:"skipupdate"`
-	Exists  bool               		`json:"exists" db:"-"`
-	Enabled bool               		`json:"enabled" db:"enabled"`
-	Servers map[string]*UserServer 		`json:"-" db:"-"`
-	Libraries map[string] *UserLibrary `json:"-" db:"-"`
-	Series map[int]*UserSeries `json:"-" db:"-"`
+	ID        int                 `json:"id" db:"id" goqu:"skipupdate"`
+	UUID      string              `json:"uuid" db:"uuid"`
+	Username  string              `json:"username" db:"username"`
+	Email     string              `json:"email" db:"email"`
+	Thumb     string              `json:"thumb" db:"thumb"`
+	Owner     bool                `json:"owner" db:"owner" goqu:"skipupdate"`
+	Enabled   bool                `json:"enabled" db:"enabled"`
+	AuthToken string              `json:"auth_token" db:"-"`
+	Servers   map[string]*Server  `json:"-" db:"-"`
+	Libraries map[string]*Library `json:"-" db:"-"`
+	Series    map[int]*Series     `json:"-" db:"-"`
+	p         *plex.User
+}
+
+func NewPartialUser(id int, authToken string) *User {
+	return &User{
+		ID:        id,
+		Enabled:   true,
+		AuthToken: authToken,
+		Servers:   make(map[string]*Server),
+		Libraries: make(map[string]*Library),
+		Series:    make(map[int]*Series),
+	}
 }
 
 func (u *User) SyncUser() error {
@@ -36,61 +52,17 @@ func (u *User) SyncUser() error {
 	if err != nil {
 		return err
 	}
-	u.User = user
-	return nil
-}
+	u.update(user)
 
-func (u *User) SyncServers() error {
-	if u.AuthToken == "" {
-		return ErrNoUserAuthToken
-	}
-	servers, err := u.User.Servers()
-	if err != nil {
-		return err
-	}
-	for _, server := range servers {
-		err = u.AttachPlexServer(&server)
-		if err != nil || err == ErrNoAppOwner {
-			return err
-		}
-	}
-	return nil
-}
-
-func (u *User) AttachServer(server *Server) error {
-	err := u.AttachPlexServer(server.Server)
-	if err != nil && err != ErrNoAppOwner {
-		return err
-	}
-	u.Servers[server.MachineIdentifier].Enabled = server.Enabled
-	return nil
-}
-
-func (u *User) AttachPlexServer(server *plex.Server) error {
-	if config.App.OwnerID == 0 {
-		return ErrNoAppOwner
-	}
-	if u.ID == config.App.OwnerID && server.OwnerId == 0 {
-		server.OwnerId = u.ID
-	}
-	if server.OwnerId != config.App.OwnerID {
-		return ErrNotApplicationOwned
-	}
 	if u.Servers == nil {
-		u.Servers = make(map[string]*UserServer)
+		u.Servers = make(map[string]*Server)
 	}
-	if _, ok := u.Servers[server.MachineIdentifier]; !ok {
-		u.Servers[server.MachineIdentifier] = &UserServer{
-			UserID:                  u.ID,
-			ServerMachineIdentifier: server.MachineIdentifier,
-			AccessToken:             server.AccessToken,
-			Enabled:                 true,
-			User:                    u,
-			Server:                  ,
-		}
-		return nil
+	if u.Libraries == nil {
+		u.Libraries = make(map[string]*Library)
 	}
-	u.Servers[server.MachineIdentifier].comparePlexServer(server)
+	if u.Series == nil {
+		u.Series = make(map[int]*Series)
+	}
 	return nil
 }
 
@@ -103,56 +75,83 @@ func (u *User) GetRecursive() error {
 	if err != nil {
 		return err
 	}
-
 	for i := range u.Servers {
 		err = u.Servers[i].SyncLibraries()
 		if err != nil {
 			return err
 		}
-		for j := range u.Servers[i].Libraries {
-			err = u.Servers[i].Libraries[j].SyncSeries()
-			if err != nil {
-				return err
-			}
+	}
+	for i := range u.Libraries {
+		err = u.Libraries[i].SyncSeries()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (u *User) GetSeries() (map[int]*Series, error) {
-	series := make(map[int]*Series)
-	for i := range u.Servers {
-		err := u.Servers[i].SyncLibraries()
-		if err != nil {
-			return nil, err
-		}
-		for j := range u.Servers[i].Libraries {
-			err = u.Servers[i].Libraries[j].SyncSeries()
-			if err != nil {
-				return nil, err
-			}
-			for k := range u.Servers[i].Libraries[j].Series {
-				series[k] = u.Servers[i].Libraries[j].Series[k]
-			}
-		}
+func (u *User) update(u2 *plex.User) bool {
+	updated := false
+	if reflect.DeepEqual(u.p, u2) {
+		return false
 	}
-	return series, nil
+	if u.ID != u2.ID {
+		u.ID = u2.ID
+		updated = true
+	}
+	if u.UUID != u2.UUID {
+		u.UUID = u2.UUID
+		updated = true
+	}
+	if u.Username != u2.Username {
+		u.Username = u2.Username
+		updated = true
+	}
+	if u.Email != u2.Email {
+		u.Email = u2.Email
+		updated = true
+	}
+	if u.Thumb != u2.Thumb {
+		u.Thumb = u2.Thumb
+		updated = true
+	}
+	if u.AuthToken != u2.AuthToken {
+		u.AuthToken = u2.AuthToken
+		updated = true
+	}
+	if u.ID == config.App.OwnerID {
+		u.Owner = true
+		// force enabled if owner
+		u.Enabled = true
+	}
+	u.p = u2
+	return updated
 }
 
-func (u *User) MergeUserSeries(userSeries map[int]*UserSeries) (map[int]*UserSeries, error) {
-	series, err := u.GetSeries()
-	if err != nil {
-		return nil, err
+func (u *User) Update(u2 *User) bool {
+	updated := false
+	if u.UUID != u2.UUID {
+		u.UUID = u2.UUID
+		updated = true
 	}
-	for s := range userSeries {
-		userSeries[s].Series = series[s]
-
+	if u.Username != u2.Username {
+		u.Username = u2.Username
+		updated = true
 	}
-	return userSeries, nil
-}
-
-func (u *User) MergeUserServerAccess(userServers map[string]*UserServer) {
-	for machineIdentifier := range userServers {
-		u.Servers[machineIdentifier].AccessToken = userServers[machineIdentifier].AccessToken
+	if u.Email != u2.Email {
+		u.Email = u2.Email
+		updated = true
 	}
+	if u.Thumb != u2.Thumb {
+		u.Thumb = u2.Thumb
+		updated = true
+	}
+	if u.Owner != u2.Owner {
+		u.Owner = u2.Owner
+		updated = true
+	}
+	if !u.Owner && u.Enabled != u2.Enabled {
+		u.Enabled = u2.Enabled
+	}
+	return updated
 }

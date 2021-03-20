@@ -2,102 +2,116 @@ package v1
 
 import (
 	"github.com/DirtyCajunRice/go-plex"
-
-	"github.com/itscontained/automarkwatched/internal/config"
 )
 
-// Library is a wrapper struct for a plex.Library
+// Library holds per User config of a plex.Library
 type Library struct {
-	*plex.Library
-	ServerMachineIdentifier string `db:"server_machine_identifier" goqu:"skipupdate"`
-	Enabled                 bool   `json:"enabled" db:"enabled"`
+	Key      int    `json:"key,string" db:"key"`
+	Type     string `json:"type" db:"type"`
+	Title    string `json:"title" db:"title"`
+	Agent    string `json:"agent" db:"agent"`
+	Scanner  string `json:"scanner" db:"scanner"`
+	UUID     string `json:"uuid" db:"uuid" goqu:"skipupdate"`
+	UserID   int    `json:"user_id" db:"user_id"`
+	Enabled  bool   `json:"enabled" db:"enabled"`
+	ServerID string `json:"server_machine_identifier" db:"server_machine_identifier"`
+	User     *User  `json:"-" db:"-"`
+	p        plex.Library
 }
 
-// UserLibrary holds per User config of a Library
-type UserLibrary struct {
-	UserID      int      `json:"user_id" db:"user_id"`
-	LibraryUUID string   `json:"library_uuid" db:"library_uuid"`
-	Enabled     bool     `json:"enabled" db:"enabled"`
-	User        *User    `json:"-" db:"-"`
-	Library     *Library `json:"-" db:"-"`
+func (l *Library) PrintKey() int {
+	return l.p.Key
 }
 
-// AttachUserServer adds the UserServer pointer to the Library struct
-func (l *Library) AttachUserServer(userServer *UserServer) {
-	l.Server = userServer
-	l.ServerMachineIdentifier = userServer.Server.MachineIdentifier
+func newLibrary(u *User, serverID string, l plex.Library) *Library {
+	return &Library{
+		Key:      l.Key,
+		Type:     l.Type,
+		Title:    l.Title,
+		Agent:    l.Agent,
+		Scanner:  l.Scanner,
+		UUID:     l.UUID,
+		UserID:   u.ID,
+		Enabled:  true,
+		ServerID: serverID,
+		User:     u,
+		p:        l,
+	}
 }
 
-func (l *Library) AttachUserSeries(userSeries *UserSeries) error {
-	err := l.AttachPlexSeries(s.Series)
-	if err != nil && err != ErrNoAppOwner {
-		return err
-	}
-	l.Series[series.RatingKey].Enabled = series.Enabled
-	return nil
-}
-
-func (l *Library) AttachPlexSeries(series *plex.Series) error {
-	if config.App.OwnerID == 0 {
-		return ErrNoAppOwner
-	}
-	if l.Series == nil {
-		l.Series = make(map[int]*Series)
-	}
-	if _, ok := l.Series[series.RatingKey]; !ok {
-		l.Series[series.RatingKey] = &Series{
-			Series:  series,
-			Enabled: true,
-		}
-	}
-	l.Series[series.RatingKey].comparePlexSeries(series)
-	l.Series[series.RatingKey].AttachLibrary(l)
-	return nil
-}
-func (l *Library) SyncSeries() error {
-	plexSeries, err := plex.GetTVSeries(l.Server.URL(), l.Server.AccessToken, l.Library.Key, false)
+func (s *Server) SyncLibraries() error {
+	libraries, err := s.p.Libraries()
 	if err != nil {
 		return err
 	}
-	for _, s := range plexSeries {
-		err = l.AttachPlexSeries(&s)
-		if err != nil || err == ErrNoAppOwner {
+	for _, l := range libraries {
+		if l.Type != "show" {
+			continue
+		}
+		err = s.User.AttachPlexLibrary(s.MachineIdentifier, l)
+		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (l *Library) compareLibrary(s2 *Library) bool {
-	updated := l.comparePlexLibrary(s2.Library)
-	if l.Enabled != s2.Enabled {
-		l.Enabled = s2.Enabled
+func (u *User) AttachLibrary(library *Library) {
+	if _, ok := u.Libraries[library.UUID]; !ok {
+		u.Libraries[library.UUID] = library
+	}
+	if u.Libraries[library.UUID].User == nil {
+		u.Libraries[library.UUID].User = u
+	}
+}
+
+func (u *User) AttachPlexLibrary(serverID string, library plex.Library) error {
+	if u.Libraries == nil {
+		u.Libraries = make(map[string]*Library)
+	}
+	if _, ok := u.Libraries[library.UUID]; !ok {
+		u.Libraries[library.UUID] = newLibrary(u, serverID, library)
+		return nil
+	}
+
+	u.Libraries[library.UUID].update(library)
+	if u.Libraries[library.UUID].User == nil {
+		u.Libraries[library.UUID].User = u
+	}
+	return nil
+}
+
+func (l *Library) update(l2 plex.Library) bool {
+
+	updated := false
+	if l.Title != l2.Title {
+		l.Title = l2.Title
 		updated = true
 	}
+	if l.Type != l2.Type {
+		l.Type = l2.Type
+		updated = true
+	}
+	if l.Key != l2.Key {
+		l.Key = l2.Key
+		updated = true
+	}
+	if l.Agent != l2.Agent {
+		l.Agent = l2.Agent
+		updated = true
+	}
+	if l.Scanner != l2.Scanner {
+		l.Scanner = l2.Scanner
+		updated = true
+	}
+	if l.UUID != l2.UUID {
+		l.UUID = l2.UUID
+		updated = true
+	}
+	l.p = l2
 	return updated
 }
 
-func (l *Library) comparePlexLibrary(s2 *plex.Library) bool {
-	updated := false
-	if l.Title != s2.Title {
-		l.Title = s2.Title
-		updated = true
-	}
-	if l.Type != s2.Type {
-		l.Type = s2.Type
-		updated = true
-	}
-	if l.Key != s2.Key {
-		l.Key = s2.Key
-		updated = true
-	}
-	if l.Agent != s2.Agent {
-		l.Agent = s2.Agent
-		updated = true
-	}
-	if l.Scanner != s2.Scanner {
-		l.Scanner = s2.Scanner
-		updated = true
-	}
-	return updated
+func (l *Library) Unwatched() ([]plex.Series, error) {
+	return l.p.Series(true)
 }

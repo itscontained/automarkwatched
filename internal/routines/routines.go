@@ -5,11 +5,11 @@ import (
 
 	"github.com/robfig/cron/v3"
 
+	v1 "github.com/itscontained/automarkwatched/api/v1"
 	"github.com/itscontained/automarkwatched/internal/api"
 	. "github.com/itscontained/automarkwatched/internal/config"
 	"github.com/itscontained/automarkwatched/internal/database"
 	"github.com/itscontained/automarkwatched/internal/ui"
-	"github.com/itscontained/automarkwatched/pkg/provider/plex"
 )
 
 var (
@@ -43,64 +43,42 @@ func Scrobble() {
 		l.WithError(err).Error("problem getting users")
 	}
 	for i := range users {
-		userSeries, e := db.GetUserSeriesScrobbled(users[i].ID)
-		if e != nil {
+		userSeriesScrobble := make(map[int]*v1.Series)
+		userSeriesScrobble, err = db.GetSeriesScrobbled(users[i])
+		if err != nil {
 			l.WithError(err).Error("problem getting user series scrobbled")
-			continue
+			return
 		}
-		data := make(map[string]map[string]string)
-		data2 := make(map[string]int)
-		allUnwatchedSeries := make([]plex.Series, 0)
-		for s := range userSeries {
-
-			if !userSeries[s].Scrobble {
-				log.Error("i should not have gotten an unscrobbled record...")
-				continue
-			}
-			if _, ok := data[userSeries[s].ServerMachineIdentifier]; !ok {
-				data[userSeries[s].ServerMachineIdentifier] = make(map[string]string)
-				us := db.GetUserServer(&users[i], userSeries[s].ServerMachineIdentifier)
-				data[userSeries[s].ServerMachineIdentifier]["access_token"] = us.AccessToken
-				gs := db.GetServer(userSeries[s].ServerMachineIdentifier)
-				data[userSeries[s].ServerMachineIdentifier]["url"] = gs.URL()
-			}
-			if _, ok := data2[userSeries[s].LibraryUUID]; !ok {
-				li := db.GetLibrary(userSeries[s].LibraryUUID)
-				data2[userSeries[s].LibraryUUID] = li.Key
-				tmpSeries, err := plex.GetTVSeries(
-					data[userSeries[s].ServerMachineIdentifier]["url"],
-					data[userSeries[s].ServerMachineIdentifier]["access_token"],
-					data2[userSeries[s].LibraryUUID],
-					true,
-				)
-				if err != nil {
-					log.WithError(err).Error("couldnt pull tv series from plex")
-					continue
-				}
-				allUnwatchedSeries = append(allUnwatchedSeries, tmpSeries...)
-			}
-
+		if err = api.PullServers(users[i]); err != nil {
+			l.WithError(err).Error("problem getting user servers")
 		}
-		for s := range userSeries {
-			isScrobbled := false
-			for d := range allUnwatchedSeries {
-				if userSeries[s].SeriesRatingKey == allUnwatchedSeries[d].RatingKey {
-					if userSeries[s].Scrobble {
-						log.Printf("marking %d for  %s watched", allUnwatchedSeries[d].ChildCount, allUnwatchedSeries[d].Title)
-						isScrobbled = true
+		for j := range users[i].Servers {
+			if err = users[i].Servers[j].SyncLibraries(); err != nil {
+				log.WithError(err).Error("couldnt sync libraries")
+				return
+			}
+		}
+		for j := range users[i].Libraries {
+			unwatched, e := users[i].Libraries[j].Unwatched()
+			if e != nil {
+				l.WithError(e).Error("problem getting unwatched series")
+				return
+			}
+			log.Printf("%+v", unwatched)
+			for _, k := range unwatched {
+				if _, ok := userSeriesScrobble[k.RatingKey]; ok {
+					if !userSeriesScrobble[k.RatingKey].Scrobble {
+						log.Error("i should not have gotten an unscrobbled record...")
+						continue
 					}
-					break
+					err = users[i].Servers[userSeriesScrobble[k.RatingKey].ServerID].Scrobble(k.RatingKey)
+					log.Infof("scrobbled episodes for %s", k.Title)
+					if err != nil {
+						log.Error(err)
+					}
 				}
-
 			}
-			if !isScrobbled {
-				continue
-			}
-			plex.Scrobble(
-				data[userSeries[s].ServerMachineIdentifier]["url"],
-				data[userSeries[s].ServerMachineIdentifier]["access_token"],
-				userSeries[s].SeriesRatingKey,
-			)
 		}
 	}
+	l.Info("job finished")
 }

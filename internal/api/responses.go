@@ -37,3 +37,11 @@ func ErrorResponse(w http.ResponseWriter, r *http.Request, err Error) {
 	render.Status(r, err.Code)
 	render.JSON(w, r, &err)
 }
+
+func ServerError(w http.ResponseWriter) {
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+func SendError(w http.ResponseWriter, e error) {
+	http.Error(w, e.Error(), http.StatusInternalServerError)
+}

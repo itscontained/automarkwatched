@@ -91,7 +91,7 @@
                     <div class="col-sm-1">
                       <h5 class="m-0"></h5>
                     </div>
-                    <div class="col-sm-9 col-lg-6">
+                    <div class="col-sm-9 col-lg-6 col-xl-5">
                       <h5 class="m-0">Title</h5>
                     </div>
                     <div class="col-sm-2 col-lg-1">
@@ -106,26 +106,25 @@
                     </div>
                   </div>
                   <hr />
-                  {{ range .userSeries }}
-                    <div>{{ .Series.Title }}</div>
+                  {{ range .user.Series }}
                     <div class="row">
                       <div class="col-sm-1">
                         <div class="custom-control custom-switch">
-                          <input type="checkbox" class="custom-control-input lg seriesToggle" id="{{ .Series.RatingKey }}" {{ if .Scrobble }}checked{{ end }}>
-                          <label class="custom-control-label" for="{{ .Series.RatingKey }}"></label>
+                          <input type="checkbox" class="custom-control-input lg seriesToggle" id="{{ .RatingKey }}" {{ if .Scrobble }}checked{{ end }}>
+                          <label class="custom-control-label" for="{{ .RatingKey }}"></label>
                         </div>
                       </div>
                       <div class="col-sm-9 col-lg-6 col-xl-5">
-                        {{ .Series.Title }}
+                        {{ .Title }}
                       </div>
                       <div class="col-sm-2 col-lg-1">
-                        {{ .Series.Year }}
+                        {{ .Year }}
                       </div>
                       <div class="col-lg-2 d-none d-lg-block">
-                        {{ .Series.Library.Title }}
+                        {{ (index $.user.Libraries .LibraryID).Title }}
                       </div>
                       <div class="col-lg-2 d-none d-lg-block">
-                        {{ .Series.Library.Server.Name }}
+                        {{ (index $.user.Servers .ServerID).Name }}
                       </div>
                     </div>
                   {{ end }}

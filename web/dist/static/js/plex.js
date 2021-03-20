@@ -2,7 +2,49 @@ const plexLoginButton = $("#PlexLoginButton");
 const plexLoadServersButton = $("#PlexLoadServersButton");
 const plexLoadLibrariesButton = $("#PlexLoadLibrariesButton");
 const plexLoadSeriesButton = $("#PlexLoadSeriesButton");
+
+const plexServerItemTemplateInput = $("#serverItemTemplateInput")
 let pollSSOWindowID;
+
+// noinspection JSUnusedGlobalSymbols
+const ApiPinObj = {
+    url: undefined,
+    pin: undefined,
+};
+
+// noinspection JSUnusedGlobalSymbols
+const PinObj = {
+    errors: undefined,
+    id: undefined,
+    code: undefined,
+    product: undefined,
+    trusted: undefined,
+    clientIdentifier: undefined,
+    location: undefined,
+    expiresIn: undefined,
+    createdAt: undefined,
+    expiresAt: undefined,
+    authToken: undefined,
+    newRegistration: undefined,
+};
+
+// noinspection JSUnusedGlobalSymbols
+const PlexServerObj = {
+    accessToken: undefined,
+    address: undefined,
+    createdAt: undefined,
+    host: undefined,
+    localAddresses: undefined,
+    machineIdentifier: undefined,
+    name: undefined,
+    owner: undefined,
+    port: undefined,
+    scheme: undefined,
+    synced: undefined,
+    updatedAt: undefined,
+    version: undefined,
+    ownerId: undefined,
+};
 
 (function ($) {
     "use strict";
@@ -68,17 +110,17 @@ function plexLoadServers() {
     plexLoadServersButton.children().toggle()
     apiCall("servers").done((data) => {
         for (const [machineID, server] of Object.entries(data)) {
-            let t = $("#serverItemTemplateInput").clone(true, true)
+            let t = plexServerItemTemplateInput.clone(true, true)
             t.find("input").data("object", server)
                 .attr("id", server.Name)
                 .attr("checked", true)
             t.find("label").attr("for", server.Name)
             t.find("h1").text(server.Name)
-            t.find("small.url").text(`${server.Scheme}://${server.Host}:${server.Port}`)
+            t.find("small.url").text(`${server.scheme}://${server.host}:${server.port}`)
             t.find("small.mid").text(machineID)
             t.find("small.version").text(server.Version)
             t.removeClass("d-none")
-            $("#serverItemTemplateInput").parent().append(t)
+            plexServerItemTemplateInput.parent().append(t)
         }
         plexLoadServersButton.children().toggle()
         plexLoadServersButton.removeAttr("disabled")
@@ -90,7 +132,7 @@ function setPlexServers() {
     let servers = Object();
     $("#wizard2").find("input:checked").each(function () {
         let server = $(this).data("object")
-        servers[server.MachineIdentifier] = server
+        servers[server.machineIdentifier] = server
     })
     apiCall("servers", servers).done(() => {
 
@@ -109,6 +151,10 @@ function pollSSOWindow(ssoWindow, loginData) {
         if (data.authToken !== null) {
             clearInterval(pollSSOWindowID)
             Cookies.set("X-Plex-Token", data.authToken)
+            $.get(`https://plex.tv/api/v2/user.json?X-Plex-Token=${data.authToken}&X-Plex-Client-Identifier=${loginData.pin.clientIdentifier}`)
+                .done((d) => {
+                    Cookies.set("X-Plex-ID", d.id)
+                })
             getUser()
         }
     })
@@ -116,7 +162,8 @@ function pollSSOWindow(ssoWindow, loginData) {
 
 function getUser() {
     let token = Cookies.get("X-Plex-Token")
-    $.get("http://localhost:5309/api/v1/user", {"X-Plex-Token": token}).done((data) => {
+    let id = Cookies.get("X-Plex-ID")
+    $.get("http://localhost:5309/api/v1/user", {"X-Plex-Token": token, "X-Plex-ID": id}).done((data) => {
         $("#wizard1-content").children("div.row-cols-1.collapse").collapse()
         $("#wizard1-content").children("div.row.collapse").show()
         $("#wizard1-content").find("button.btn-primary").removeAttr("disabled")

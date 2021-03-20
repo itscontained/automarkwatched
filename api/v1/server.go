@@ -1,25 +1,65 @@
 package v1
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/DirtyCajunRice/go-plex"
+
+	"github.com/itscontained/automarkwatched/internal/config"
 )
 
-// Server is an app config wrapper for a plex.Server
+// Server holds per User app config for a plex.Server
 type Server struct {
-	*plex.Server
-	Enabled bool `json:"enabled" db:"enabled"`
+	UserID            int    `db:"user_id" goqu:"skipupdate"`
+	Address           string `json:"address" db:"address"`
+	Host              string `json:"host" db:"host"`
+	LocalAddresses    string `json:"local_addresses" db:"local_addresses"`
+	Name              string `json:"name" db:"name"`
+	Port              int    `json:"port" db:"port"`
+	Scheme            string `json:"scheme" db:"scheme"`
+	Version           string `json:"version" db:"version"`
+	OwnerId           int    `json:"owner_id" db:"owner_id"`
+	MachineIdentifier string `json:"machine_identifier" db:"machine_identifier" goqu:"skipupdate"`
+	AccessToken       string `json:"access_token" db:"access_token"`
+	Enabled           bool   `json:"enabled" db:"enabled"`
+	User              *User  `json:"-" db:"-"`
+	p                 *plex.Server
 }
 
-func (s *Server) SyncLibraries() error {
-	if s.AccessToken == "" {
-		return ErrNoUserAccessToken
+func newServer(u *User, s *plex.Server) *Server {
+	return &Server{
+		UserID:            u.ID,
+		Address:           s.Address,
+		Host:              s.Host,
+		LocalAddresses:    s.LocalAddresses,
+		Name:              s.Name,
+		Port:              s.Port,
+		Scheme:            s.Scheme,
+		Version:           s.Version,
+		OwnerId:           s.OwnerId,
+		MachineIdentifier: s.MachineIdentifier,
+		AccessToken:       s.AccessToken,
+		Enabled:           true,
+		User:              u,
+		p:                 s,
 	}
-	libraries, err := s.Server.Libraries()
+}
+
+func (s *Server) URL() string {
+	return fmt.Sprintf("%s://%s:%d", s.Scheme, s.Host, s.Port)
+}
+
+func (u *User) SyncServers() error {
+	if u.AuthToken == "" {
+		return ErrNoUserAuthToken
+	}
+	servers, err := u.p.Servers()
 	if err != nil {
 		return err
 	}
-	for _, l := range libraries {
-		err = s.AttachPlexLibrary(&l)
+	for _, server := range servers {
+		err = u.AttachPlexServer(&server)
 		if err != nil || err == ErrNoAppOwner {
 			return err
 		}
@@ -27,16 +67,49 @@ func (s *Server) SyncLibraries() error {
 	return nil
 }
 
-func (s *Server) compareServer(s2 *Server) bool {
-	updated := s.comparePlexServer(s2.Server)
-	if s.Enabled != s2.Enabled {
-		s.Enabled = s2.Enabled
-		updated = true
+func (u *User) AttachServer(server *Server) {
+	if server.p == nil {
+		server.p = &plex.Server{
+			Host:        server.Host,
+			Scheme:      server.Scheme,
+			Port:        server.Port,
+			AccessToken: server.AccessToken,
+		}
+		App.AttachServer(server.p)
 	}
-	return updated
+	if _, ok := u.Servers[server.MachineIdentifier]; !ok {
+		u.Servers[server.MachineIdentifier] = server
+	}
+	if u.Servers[server.MachineIdentifier].User == nil {
+		u.Servers[server.MachineIdentifier].User = u
+	}
 }
 
-func (s *Server) comparePlexServer(s2 *plex.Server) bool {
+func (u *User) AttachPlexServer(server *plex.Server) error {
+	if config.App.OwnerID == 0 {
+		return ErrNoAppOwner
+	}
+	if u.ID == config.App.OwnerID && server.OwnerId == 0 {
+		server.OwnerId = u.ID
+	}
+	if server.OwnerId != config.App.OwnerID {
+		return ErrNotApplicationOwned
+	}
+	if _, ok := u.Servers[server.MachineIdentifier]; !ok {
+		u.Servers[server.MachineIdentifier] = newServer(u, server)
+		return nil
+	}
+	u.Servers[server.MachineIdentifier].update(server)
+	if u.Servers[server.MachineIdentifier].User == nil {
+		u.Servers[server.MachineIdentifier].User = u
+	}
+	return nil
+}
+
+func (s *Server) update(s2 *plex.Server) bool {
+	if reflect.DeepEqual(s.p, s2) {
+		return false
+	}
 	updated := false
 	if s.Name != s2.Name {
 		s.Name = s2.Name
@@ -66,19 +139,10 @@ func (s *Server) comparePlexServer(s2 *plex.Server) bool {
 		s.Version = s2.Version
 		updated = true
 	}
+	s.p = s2
 	return updated
 }
 
-// UserServer holds per User app config for a Server
-type UserServer struct {
-	UserID                  int     `db:"user_id" goqu:"skipupdate"`
-	ServerMachineIdentifier string  `db:"server_machine_identifier" goqu:"skipupdate"`
-	AccessToken             string  `db:"access_token"`
-	Enabled                 bool    `db:"enabled"`
-	User                    *User   `json:"-" db:"-"`
-	Server                  *Server `json:"-" db:"-"`
-}
-
-func (s *UserServer) URL() string {
-	return s.Server.URL()
+func (s *Server) Scrobble(ratingKey int) error {
+	return s.p.Scrobble(ratingKey)
 }
