@@ -51,24 +51,34 @@ func syncSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	series, err := db.GetSeries(user)
+	msg, err := SaveSeries(user)
 	if err != nil {
 		SendError(w, err)
 		return
 	}
+	render.JSON(w, r, &msg)
+}
 
+func SaveSeries(user *v1.User) (map[string]int, error) {
 	missing := make(map[int]*v1.Series)
-	for i := range series {
+	ownerSeries, err := db.GetOwnerSeries()
+	if err != nil {
+		return nil, err
+	}
+	series, err := db.GetSeries(user)
+	if err != nil {
+		return nil, err
+	}
+	for i := range ownerSeries {
 		if _, ok := series[i]; !ok {
-			missing[i] = series[i]
-			user.AttachSeries(series[i])
+			ownerSeries[i].Enabled = true
+			ownerSeries[i].UserID = user.ID
+			missing[i] = ownerSeries[i]
 		}
 	}
-
 	if len(missing) > 0 {
 		if err = db.AddSeries(missing); err != nil {
-			SendError(w, err)
-			return
+			return nil, err
 		}
 	}
 	untouched := len(user.Series) - len(missing)
@@ -76,7 +86,7 @@ func syncSeries(w http.ResponseWriter, r *http.Request) {
 		"Untouched": untouched,
 		"Added":     len(missing),
 	}
-	render.JSON(w, r, &msg)
+	return msg, nil
 }
 
 func scrobbleSeries(w http.ResponseWriter, r *http.Request) {

@@ -13,7 +13,7 @@
     <script data-search-pseudo-elements defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js" crossorigin="anonymous"></script>
   </head>
-  <body class="nav-fixed sidenav-toggled">
+  <body class="nav-fixed">
   <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white" id="sidenavAccordion">
     <a class="navbar-brand" href="#">AutoMarkWatched</a>
     <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 mr-lg-2" id="sidebarToggle" disabled><i data-feather="menu"></i></button>
@@ -29,11 +29,11 @@
             </div>
           </h6>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="#">
+          <a class="dropdown-item" href="#" id="settings">
             <div class="dropdown-item-icon"><i data-feather="settings"></i></div>
-            Account
+            Settings
           </a>
-          <a class="dropdown-item" href="#">
+          <a class="dropdown-item" href="#" id="logout">
             <div class="dropdown-item-icon"><i data-feather="log-out"></i></div>
             Logout
           </a>
@@ -88,13 +88,13 @@
                 </div>
                 <div class="card-body" id="SeriesListCardBody">
                   <div class="row">
-                    <div class="col-sm-1">
+                    <div class="col-1">
                       <h5 class="m-0"></h5>
                     </div>
-                    <div class="col-sm-9 col-lg-6 col-xl-5">
+                    <div class="col-9 col-sm-9 col-lg-6 col-xl-5">
                       <h5 class="m-0">Title</h5>
                     </div>
-                    <div class="col-sm-2 col-lg-1">
+                    <div class="col-2 col-sm-2 col-lg-1">
                       <h5 class="d-block d-md-none m-0">Y</h5>
                       <h5 class="d-none d-md-block m-0">Year</h5>
                     </div>
@@ -108,16 +108,16 @@
                   <hr />
                   {{ range .user.Series }}
                     <div class="row">
-                      <div class="col-sm-1">
+                      <div class="col-1 col-sm-1">
                         <div class="custom-control custom-switch">
                           <input type="checkbox" class="custom-control-input lg seriesToggle" id="{{ .RatingKey }}" {{ if .Scrobble }}checked{{ end }}>
                           <label class="custom-control-label" for="{{ .RatingKey }}"></label>
                         </div>
                       </div>
-                      <div class="col-sm-9 col-lg-6 col-xl-5">
-                        {{ .Title }}
+                      <div class="col-8 col-sm-9 col-lg-6 col-xl-5 text-truncate justify-content-center">
+                        <span>{{ .Title }}</span>
                       </div>
-                      <div class="col-sm-2 col-lg-1">
+                      <div class="col-3 col-sm-2 col-lg-1">
                         {{ .Year }}
                       </div>
                       <div class="col-lg-2 d-none d-lg-block">

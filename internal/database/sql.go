@@ -39,8 +39,12 @@ func Init() {
 	DB.Sqlx.MustExec(appSchema)
 	DB.Sqlx.MustExec(userSchema)
 	DB.Sqlx.MustExec(serverSchema)
+	DB.Sqlx.MustExec(serverTrigger)
 	DB.Sqlx.MustExec(librarySchema)
+	DB.Sqlx.MustExec(libraryTrigger)
 	DB.Sqlx.MustExec(seriesSchema)
+	DB.Sqlx.MustExec(seriesTrigger)
+
 }
 
 func Close() {
@@ -78,7 +82,6 @@ func (db *database) GetUser(id int) *v1.User {
 	var u v1.User
 	ok, err := db.Goqu.From("users").Where(goqu.Ex{"id": id}).ScanStruct(&u)
 	if !ok || err != nil {
-		log.WithField("user_id", id).Error("could not get user from database")
 		return nil
 	}
 	return &u
@@ -162,6 +165,19 @@ func (db *database) GetLibrary(user *v1.User, uuid string) *v1.Library {
 	return &library
 }
 
+func (db *database) GetOwnerLibraries() (map[string]*v1.Library, error) {
+	libraries := make([]*v1.Library, 0)
+	err := db.Goqu.From("libraries").Where(goqu.Ex{"user_id": App.OwnerID}).ScanStructs(&libraries)
+	if err != nil {
+		return nil, err
+	}
+	libraryMap := make(map[string]*v1.Library)
+	for i := range libraries {
+		libraryMap[libraries[i].UUID] = libraries[i]
+	}
+	return libraryMap, nil
+}
+
 func (db *database) GetLibraries(user *v1.User) (map[string]*v1.Library, error) {
 	libraries := make([]*v1.Library, 0)
 	err := db.Goqu.From("libraries").Where(goqu.Ex{"user_id": user.ID}).ScanStructs(&libraries)
@@ -215,6 +231,19 @@ func (db *database) AddSeries(series map[int]*v1.Series) error {
 		}
 	}
 	return nil
+}
+
+func (db *database) GetOwnerSeries() (map[int]*v1.Series, error) {
+	var series []*v1.Series
+	err := db.Goqu.From("series").Where(goqu.Ex{"user_id": App.OwnerID}).ScanStructs(&series)
+	if err != nil {
+		return nil, err
+	}
+	s := make(map[int]*v1.Series)
+	for i := range series {
+		s[series[i].RatingKey] = series[i]
+	}
+	return s, nil
 }
 
 func (db *database) GetSeries(user *v1.User) (map[int]*v1.Series, error) {

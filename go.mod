@@ -3,7 +3,7 @@ module github.com/itscontained/automarkwatched
 go 1.16
 
 require (
-	github.com/DirtyCajunRice/go-plex v0.0.0-20210320142258-1f703d7ac196
+	github.com/DirtyCajunRice/go-plex v0.0.0-20210320161609-e51d4fcc7f89
 	github.com/DirtyCajunRice/go-utility v1.0.0
 	github.com/doug-martin/goqu/v9 v9.11.0
 	github.com/go-chi/chi/v5 v5.0.0

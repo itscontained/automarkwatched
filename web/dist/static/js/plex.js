@@ -77,7 +77,7 @@ function apiCall(endpoint, data) {
     let token = Cookies.get("X-Plex-Token")
     let opts = {
         type: "GET",
-        url: `http://localhost:5309/api/v1/${endpoint}`,
+        url: `${window.location.protocol}//${window.location.hostname}:5309/api/v1/${endpoint}`,
         contentType: "application/json",
         headers: {"X-Plex-Token": token}
     }
@@ -91,18 +91,29 @@ function plexLogin() {
     plexLoginButton.attr("disabled", true)
     plexLoginButton.children().toggle()
     let loginData = null
-    if (Cookies.get("X-Plex-Token") !== undefined) {
+    if (Cookies.get("X-Plex-Token") !== undefined || Cookies.get("X-Plex-ID") !== undefined) {
         getUser()
         return
     }
-    $.get( "http://localhost:5309/api/v1/login").done((data) => {
+    $.get( `${window.location.protocol}//${window.location.hostname}:5309/api/v1/login`).done((data) => {
         loginData = data
         let features = "resizable,scrollbars,status,width=700,height=600"
-        let ssoWindow = window.open(data.url, "Plex.TV SSO", features)
+        let ssoWindow
+        if ('ontouchstart' in document.documentElement && /mobi/i.test(navigator.userAgent)) {
+            let newButton = $("<a>")
+            newButton.addClass(plexLoginButton.attr("class"))
+            newButton.attr("href", data.url)
+            newButton.attr("target", "_blank")
+            newButton.text("Mobile Login")
+            newButton.appendTo(".card-body")
+            pollSSOWindowID = setInterval(pollSSOWindow, 1000, null, loginData, true)
+        } else {
+            ssoWindow = window.open(data.url, "Plex.TV SSO", features)
+        }
         if (ssoWindow != null) {
             pollSSOWindowID = setInterval(pollSSOWindow, 1000, ssoWindow, loginData)
         }
-    });
+    })
 }
 
 function plexLoadServers() {
@@ -138,10 +149,12 @@ function setPlexServers() {
 
     })
 }
-function pollSSOWindow(ssoWindow, loginData) {
-    if (ssoWindow == null || ssoWindow.closed) {
-        console.log("sso window closed")
-        clearInterval(pollSSOWindowID)
+function pollSSOWindow(ssoWindow, loginData, mobile) {
+    if (!mobile) {
+        if (ssoWindow == null || ssoWindow.closed) {
+            console.log("sso window closed")
+            clearInterval(pollSSOWindowID)
+        }
     }
     let pinData = {
         code: loginData.pin.code,
@@ -154,30 +167,43 @@ function pollSSOWindow(ssoWindow, loginData) {
             $.get(`https://plex.tv/api/v2/user.json?X-Plex-Token=${data.authToken}&X-Plex-Client-Identifier=${loginData.pin.clientIdentifier}`)
                 .done((d) => {
                     Cookies.set("X-Plex-ID", d.id)
+                    getUser(d)
                 })
-            getUser()
         }
     })
 }
 
-function getUser() {
+function getUser(user) {
     let token = Cookies.get("X-Plex-Token")
     let id = Cookies.get("X-Plex-ID")
-    $.get("http://localhost:5309/api/v1/user", {"X-Plex-Token": token, "X-Plex-ID": id}).done((data) => {
-        $("#wizard1-content").children("div.row-cols-1.collapse").collapse()
-        $("#wizard1-content").children("div.row.collapse").show()
-        $("#wizard1-content").find("button.btn-primary").removeAttr("disabled")
-        $("#wizard1-content").find("img").attr("src", data.thumb)
-        $("#wizard1-content").find("h1").text(data.username)
-        if (!data.exists) {
+    $.get(`${window.location.protocol}//${window.location.hostname}:5309/api/v1/user`, {"X-Plex-Token": token, "X-Plex-ID": id}).done((data) => {
+        if (window.location.pathname === "/setup") {
+            let wizard1Content = $("#wizard1-content")
+            wizard1Content.children("div.row-cols-1.collapse").collapse()
+            wizard1Content.children("div.row.collapse").show()
+            wizard1Content.find("button.btn-primary").removeAttr("disabled")
+            wizard1Content.find("img").attr("src", data.thumb)
+            wizard1Content.find("h1").text(data.username)
             console.log(data)
             data.owner = true
+
+        } else if (window.location.pathname === "/login") {
+            window.location.href = "/"
+        }
+    }).fail((data, _, xhr) => {
+        console.log(xhr)
+        if (xhr === "See Other" ) {
+            user.enabled = true
+            user.auth_token = user.authToken
+            console.log(user)
             $.ajax({
                 type: "POST",
-                url: `http://localhost:5309/api/v1/user`,
-                data: JSON.stringify(data),
+                url: `${window.location.protocol}//${window.location.hostname}:5309/api/v1/user`,
+                data: JSON.stringify(user),
                 contentType: "application/json",
-                headers: {"X-Plex-Token": token}
+                headers: {"X-Plex-Token": token, "X-Plex-ID": id}
+            }).done(() => {
+                window.location.href = "/"
             })
         }
     })

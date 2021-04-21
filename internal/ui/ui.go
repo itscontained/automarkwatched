@@ -48,12 +48,15 @@ func Start() {
 	l := log.WithFields(log.Fields{
 		"process": "webserver",
 	})
-
+	r.Group(func(r chi.Router) {
+		r.Use(api.TokenContext)
+		r.Use(api.UserContext)
+		r.Get("/", index)
+	})
 	r.Route("/", func(r chi.Router) {
-		// r.Use(CookieAuth)
 		r.Get("/setup", setup)
-		r.With(api.TokenContext).With(api.UserContext).Get("/", index)
-		r.Get("/static/*", static)
+		r.Get("/login", login)
+		r.With(middleware.NoCache).Get("/static/*", static)
 	})
 	templates, err = template.New("base").ParseGlob("web/dist/templates/*.tmpl")
 	if err != nil {
@@ -88,6 +91,15 @@ func static(w http.ResponseWriter, r *http.Request) {
 
 func setup(w http.ResponseWriter, _ *http.Request) {
 	renderTemplate(w, "setup.tmpl", nil)
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	_, _, err := api.GetRequestCreds(r)
+	if err != nil {
+		renderTemplate(w, "login.tmpl", nil)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 func index(w http.ResponseWriter, r *http.Request) {

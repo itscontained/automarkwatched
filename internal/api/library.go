@@ -7,7 +7,6 @@ import (
 	"github.com/go-chi/render"
 
 	v1 "github.com/itscontained/automarkwatched/api/v1"
-	"github.com/itscontained/automarkwatched/internal/config"
 )
 
 func libraryRoutes(r chi.Router) {
@@ -49,32 +48,44 @@ func setLibraries(w http.ResponseWriter, r *http.Request) {
 		ServerError(w)
 		return
 	}
+	msg, err := SaveLibraries(user)
+	if err != nil {
+		ServerError(w)
+		return
+	}
+	render.JSON(w, r, &msg)
+}
+
+func SaveLibraries(user *v1.User) (map[string]int, error) {
 	missing := make(map[string]*v1.Library)
-	ignored := 0
-	for i := range libraries {
-		if libraries[i].UserID != config.App.OwnerID {
-			ignored++
-			continue
-		}
-		if _, ok := user.Libraries[i]; !ok {
-			missing[i] = libraries[i]
+	ownerLibraries, err := db.GetOwnerLibraries()
+	if err != nil {
+		return nil, err
+	}
+	libraries, err := db.GetLibraries(user)
+	if err != nil {
+		return nil, err
+	}
+	for i := range ownerLibraries {
+		if _, ok := libraries[i]; !ok {
+			ownerLibraries[i].Enabled = true
+			ownerLibraries[i].UserID = user.ID
+			missing[i] = ownerLibraries[i]
 		}
 	}
 	if len(missing) > 0 {
-		err := db.AddLibraries(missing)
+		err = db.AddLibraries(missing)
 		if err != nil {
-			SendError(w, err)
-			return
+			return nil, err
 		}
 	}
-	untouched := len(libraries) - len(missing) - ignored
+	untouched := len(user.Libraries) - len(missing)
 	msg := map[string]int{
 		"Untouched": untouched,
 		"Added":     len(missing),
-		"Ignored":   ignored,
 	}
 	for i := range missing {
 		user.AttachLibrary(missing[i])
 	}
-	render.JSON(w, r, &msg)
+	return msg, nil
 }

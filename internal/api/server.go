@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	log "github.com/sirupsen/logrus"
 
 	v1 "github.com/itscontained/automarkwatched/api/v1"
 	"github.com/itscontained/automarkwatched/internal/config"
@@ -49,25 +50,38 @@ func setServers(w http.ResponseWriter, r *http.Request) {
 		ServerError(w)
 		return
 	}
+	msg, err := SaveServers(user)
+	if err != nil {
+		SendError(w, err)
+		return
+	}
+	render.JSON(w, r, &msg)
+}
+
+func SaveServers(user *v1.User) (map[string]int, error) {
 	missing := make(map[string]*v1.Server)
 	ignored := 0
-	for i := range servers {
-		if servers[i].OwnerId != config.App.OwnerID {
+	servers, err := db.GetServers(user)
+	if err != nil {
+		return nil, err
+	}
+	for i := range user.Servers {
+		if user.Servers[i].OwnerId != config.App.OwnerID {
 			ignored++
 			continue
 		}
-		if _, ok := user.Servers[i]; !ok {
-			missing[i] = servers[i]
+		if _, ok := servers[i]; !ok {
+			missing[i] = user.Servers[i]
 		}
 	}
 	if len(missing) > 0 {
-		err := db.AddServers(missing)
+		err = db.AddServers(missing)
 		if err != nil {
-			SendError(w, err)
-			return
+			log.Printf("%+v, %+v", err, missing["30b15d72249fecfface1e4b77f3f69bb2a2d5fa1"])
+			return nil, err
 		}
 	}
-	untouched := len(servers) - len(missing) - ignored
+	untouched := len(user.Servers) - len(missing) - ignored
 	msg := map[string]int{
 		"Untouched": untouched,
 		"Added":     len(missing),
@@ -75,11 +89,10 @@ func setServers(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := range missing {
 		user.AttachServer(missing[i])
-		err := user.SyncServers()
+		err = user.SyncServers()
 		if err != nil {
-			SendError(w, err)
-			return
+			return nil, err
 		}
 	}
-	render.JSON(w, r, &msg)
+	return msg, nil
 }

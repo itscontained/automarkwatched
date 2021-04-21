@@ -123,14 +123,15 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	newUser := v1.NewPartialUser(id, token)
-	savedUser := db.GetUser(newUser.ID)
+	user := v1.NewPartialUser(id, token)
+	savedUser := db.GetUser(user.ID)
 	if savedUser == nil {
-		render.JSON(w, r, newUser)
+		render.Status(r, http.StatusSeeOther)
+		render.JSON(w, r, user)
 		return
 	}
-	newUser.Update(savedUser)
-	render.JSON(w, r, savedUser)
+	user.Update(savedUser)
+	render.JSON(w, r, user)
 }
 
 func setUser(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +139,35 @@ func setUser(w http.ResponseWriter, r *http.Request) {
 	if err := render.DecodeJSON(r.Body, &user); err != nil {
 		log.WithError(err).Error("problem parsing json")
 		return
+	}
+	savedUser := db.GetUser(user.ID)
+	if savedUser == nil {
+		if err := user.GetRecursive(); err != nil {
+			log.WithError(err).Error("problem getting user's plex data")
+			SendError(w, err)
+			return
+		}
+		if len(user.Servers) == 0 {
+			log.Error("User has no ownerID matching servers")
+			return
+		}
+		if err := SaveUser(user); err != nil {
+			SendError(w, err)
+			return
+		}
+		if _, err := SaveServers(user); err != nil {
+			SendError(w, err)
+			return
+		}
+		if _, err := SaveLibraries(user); err != nil {
+			SendError(w, err)
+			return
+		}
+		if _, err := SaveSeries(user); err != nil {
+			SendError(w, err)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusCreated), http.StatusCreated)
 	}
 	if err := db.UpdateUser(user); err != nil {
 		log.WithError(err).Error("problem updating  parsing json")
@@ -158,7 +188,7 @@ func TokenContext(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -187,9 +217,6 @@ func UserContext(next http.Handler) http.Handler {
 				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
-			for j := range u.Libraries {
-				log.Warnf("indexset: %+v", u.Libraries[j].PrintKey())
-			}
 			ctx := context.WithValue(r.Context(), "user", u)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
@@ -206,6 +233,18 @@ func GetContextUser(r *http.Request) *v1.User {
 	savedUser := db.GetUser(user.ID)
 	user.Update(savedUser)
 	return user
+}
+
+func GetRequestCreds(r *http.Request) (string, int, error) {
+	token := getRequestToken(r)
+	if token == "" {
+		return "", 0, errors.New("no token")
+	}
+	id, err := getRequestUserID(r)
+	if err != nil {
+		return "", id, err
+	}
+	return token, id, nil
 }
 
 func getRequestToken(r *http.Request) string {
@@ -246,4 +285,11 @@ func getContextUserData(r *http.Request) (string, int, error) {
 	token := tokenIdMap["token"].(string)
 	id := tokenIdMap["id"].(int)
 	return token, id, nil
+}
+
+func SaveUser(user *v1.User) error {
+	if err := db.AddUser(user); err != nil {
+		return err
+	}
+	return nil
 }

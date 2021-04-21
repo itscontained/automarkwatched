@@ -18,7 +18,7 @@ var (
 )
 
 func Start() {
-	_, err := Cron.AddFunc("*/5 * * * *", Scrobble)
+	_, err := Cron.AddFunc("* * * * *", Scrobble)
 	if err != nil {
 		log.Error(err)
 	}
@@ -54,7 +54,7 @@ func Scrobble() {
 		}
 		for j := range users[i].Servers {
 			if err = users[i].Servers[j].SyncLibraries(); err != nil {
-				log.WithError(err).Error("couldnt sync libraries")
+				log.WithError(err).Error("problem syncing libraries")
 				return
 			}
 		}
@@ -64,7 +64,6 @@ func Scrobble() {
 				l.WithError(e).Error("problem getting unwatched series")
 				return
 			}
-			log.Printf("%+v", unwatched)
 			for _, k := range unwatched {
 				if _, ok := userSeriesScrobble[k.RatingKey]; ok {
 					if !userSeriesScrobble[k.RatingKey].Scrobble {
