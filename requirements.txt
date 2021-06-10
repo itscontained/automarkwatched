@@ -1,4 +1,4 @@
-Django==2.2.10
+Django==2.2.24
 PlexAPI==3.1.0
 requests==2.22.0
 gunicorn==19.9.0
