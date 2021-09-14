@@ -44,6 +44,14 @@ func NewPartialUser(id int, authToken string) *User {
 	}
 }
 
+func (u *User) Attach() *User {
+	if u.p == nil {
+		u.createPlexUser()
+	}
+	App.AttachUser(u.p)
+	return u
+}
+
 func (u *User) SyncUser() error {
 	if u.AuthToken == "" {
 		return ErrNoUserAuthToken
@@ -66,7 +74,15 @@ func (u *User) SyncUser() error {
 	return nil
 }
 
-func (u *User) GetRecursive() error {
+// AttachServers is a convenience function that accepts the standard map[string]*Server db response
+// to call AttachServer multiple times
+func (u *User) AttachServers(servers map[string]*Server) {
+	for s := range servers {
+		u.AttachServer(servers[s])
+	}
+}
+
+func (u *User) GetAll() error {
 	err := u.SyncUser()
 	if err != nil {
 		return err
@@ -75,14 +91,22 @@ func (u *User) GetRecursive() error {
 	if err != nil {
 		return err
 	}
+	return u.GetFromExisting()
+}
+
+func (u *User) GetFromExisting() error {
 	for i := range u.Servers {
-		err = u.Servers[i].SyncLibraries()
+		u.Servers[i].p.Scheme = "https"
+		u.Servers[i].p.Host = "plex.cajun.pro"
+		u.Servers[i].Scheme = "https"
+		u.Servers[i].Host = "plex.cajun.pro"
+		err := u.Servers[i].SyncLibraries()
 		if err != nil {
 			return err
 		}
 	}
 	for i := range u.Libraries {
-		err = u.Libraries[i].SyncSeries()
+		err := u.Libraries[i].SyncSeries()
 		if err != nil {
 			return err
 		}
@@ -154,4 +178,15 @@ func (u *User) Update(u2 *User) bool {
 		u.Enabled = u2.Enabled
 	}
 	return updated
+}
+
+func (u *User) createPlexUser() {
+	u.p = &plex.User{
+		ID:        u.ID,
+		UUID:      u.UUID,
+		Username:  u.Username,
+		Email:     u.Email,
+		Thumb:     u.Thumb,
+		AuthToken: u.AuthToken,
+	}
 }

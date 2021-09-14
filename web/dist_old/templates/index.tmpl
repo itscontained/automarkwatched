@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Dashboard - AutoMarkWatched</title>
+    <link href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp" rel="stylesheet" />
+    <!-- Load Simple DataTables Stylesheet-->
+    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+    <!-- Roboto and Roboto Mono fonts from Google Fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet" />
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <link href="/static/css/custom.css" rel="stylesheet" />
+    <link rel="icon" type="image/x-icon" href="/static/assets/img/favicon.ico" />
+    <script data-search-pseudo-elements defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js" crossorigin="anonymous"></script>
+  </head>
+  <body class="nav-fixed">
+    <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white" id="sidenavAccordion">
+      <a class="navbar-brand" href="#">AutoMarkWatched</a>
+      <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 mr-lg-2" id="sidebarToggle" disabled><i data-feather="menu"></i></button>
+      <ul class="navbar-nav align-items-center ml-auto">
+        <li class="nav-item dropdown no-caret mr-3 mr-lg-0 dropdown-user">
+          <a class="btn btn-icon btn-transparent-dark dropdown-toggle" id="navbarDropdownUserImage" href="javascript:void(0);" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><img class="img-fluid" src="{{ .user.Thumb }}" /></a>
+          <div class="dropdown-menu dropdown-menu-right border-0 shadow animated--fade-in-up" aria-labelledby="navbarDropdownUserImage">
+            <h6 class="dropdown-header d-flex align-items-center">
+              <img class="dropdown-user-img" src="{{ .user.Thumb }}" />
+              <div class="dropdown-user-details">
+                <div class="dropdown-user-details-name">{{ .user.Username }}</div>
+                <div class="dropdown-user-details-email">{{ .user.Email }}</div>
+              </div>
+            </h6>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#" id="settings">
+              <div class="dropdown-item-icon"><i data-feather="settings"></i></div>
+              Settings
+            </a>
+            <a class="dropdown-item" href="#" id="logout">
+              <div class="dropdown-item-icon"><i data-feather="log-out"></i></div>
+              Logout
+            </a>
+          </div>
+        </li>
+      </ul>
+    </nav>
+    <div id="layoutSidenav">
+      <div id="layoutSidenav_content">
+        <main>
+          <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
+            <div class="container">
+              <div class="page-header-content pt-4">
+                <div class="row align-items-center justify-content-between">
+                  <div class="col-auto mt-4">
+                    <h1 class="page-header-title">
+                      <div class="page-header-icon"><i data-feather="activity"></i></div>
+                      TV Shows
+                    </h1>
+                    <div class="page-header-subtitle">All shows</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+          <div class="container mt-n10">
+            <div class="row">
+              <div class="col-12 mb-4">
+                <div class="card card-header-actions h-100">
+              <table id="tvShowTable">
+                <thead>
+                  <tr>
+                    <th>Scrobble</th>
+                    <th>RatingKey</th>
+                    <th>Title</th>
+                    <th>Year</th>
+                    <th>Library</th>
+                    <th>Server</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{ range .user.Series }}
+                  <tr>
+                    <td>{{ .Scrobble }}</td>
+                    <td>{{ .RatingKey }}</td>
+                    <td>{{ .Title }}</td>
+                    <td>{{ .Year }}</td>
+                    <td>{{ (index $.user.Libraries .LibraryID).Title }}</td>
+                    <td>{{ (index $.user.Servers .ServerID).Name }}</td>
+                  </tr>
+                {{ end }}
+                </tbody>
+              </table>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 mb-4">
+                <div class="card card-header-actions h-100">
+                  <div class="card-body" id="SeriesListCardBody">
+                    <button class="btn btn-primary btn-sm">Filter</button>
+                    <form>
+                      <input class="form-control" placeholder="Search">
+                    </form>
+                    <div class="dropdown no-caret">
+                      <button class="btn btn-transparent-dark btn-icon dropdown-toggle" id="dropdownMenuButton" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="text-gray-500" data-feather="more-vertical"></i></button>
+                      <div class="dropdown-menu dropdown-menu-right animated--fade-in-up" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="#!">
+                          <div class="dropdown-item-icon"><i class="text-gray-500" data-feather="list"></i></div>
+                          Manage Tasks
+                        </a>
+                        <a class="dropdown-item" href="#!">
+                          <div class="dropdown-item-icon"><i class="text-gray-500" data-feather="plus-circle"></i></div>
+                          Add New Task
+                        </a>
+                        <a class="dropdown-item" href="#!">
+                          <div class="dropdown-item-icon"><i class="text-gray-500" data-feather="minus-circle"></i></div>
+                          Delete Tasks
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-body" id="SeriesListCardBody">
+                    <div class="row">
+                      <div class="col-1">
+                        <h5 class="m-0"></h5>
+                      </div>
+                      <div class="col-9 col-sm-9 col-lg-6 col-xl-5">
+                        <h5 class="m-0">Title</h5>
+                      </div>
+                      <div class="col-2 col-sm-2 col-lg-1">
+                        <h5 class="d-block d-md-none m-0">Y</h5>
+                        <h5 class="d-none d-md-block m-0">Year</h5>
+                      </div>
+                      <div class="col-lg-2 d-none d-lg-block">
+                        <h5 class="m-0">Library</h5>
+                      </div>
+                      <div class="col-lg-2 d-none d-lg-block">
+                        <h5 class="m-0">Server</h5>
+                      </div>
+                    </div>
+                    <hr />
+                    {{ range .user.Series }}
+                      <div class="row">
+                        <div class="col-1 col-sm-1">
+                          <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input lg seriesToggle" id="{{ .RatingKey }}" {{ if .Scrobble }}checked{{ end }}>
+                            <label class="custom-control-label" for="{{ .RatingKey }}"></label>
+                          </div>
+                        </div>
+                        <div class="col-8 col-sm-9 col-lg-6 col-xl-5 text-truncate justify-content-center">
+                          <span>{{ .Title }}</span>
+                        </div>
+                        <div class="col-3 col-sm-2 col-lg-1">
+                          {{ .Year }}
+                        </div>
+                        <div class="col-lg-2 d-none d-lg-block">
+                          {{ (index $.user.Libraries .LibraryID).Title }}
+                        </div>
+                        <div class="col-lg-2 d-none d-lg-block">
+                          {{ (index $.user.Servers .ServerID).Name }}
+                        </div>
+                      </div>
+                    {{ end }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <footer class="footer mt-auto footer-light">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-6 small">Copyright &copy; DirtyCajunRice 2022</div>
+              <div class="col-md-6 text-md-right small">
+                <a href="#!">Privacy Policy</a>
+                &middot;
+                <a href="#!">Terms &amp; Conditions</a>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  <!-- Load Bootstrap JS bundle-->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <!-- Load global scripts-->
+  <script type="module" src="/static/js/material.js"></script>
+  <script src="/static/js/scripts.js"></script>
+  <!-- Load Simple DataTables Scripts-->
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+  <script src="/static/js/tvShowTable.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+  <script src="/static/js/scripts.js"></script>
+  <script src="/static/js/plex.js"></script>
+  <script src="/static/js/custom.js"></script>
+</body>
+</html>

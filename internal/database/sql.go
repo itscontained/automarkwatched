@@ -73,6 +73,16 @@ func (db *database) GetAppConfig() error {
 }
 
 // User Methods
+
+func (db *database) GetOwner() *v1.User {
+	var u v1.User
+	ok, err := db.Goqu.From("users").Where(goqu.C("owner").Eq(true)).ScanStruct(&u)
+	if !ok || err != nil {
+		return nil
+	}
+	return &u
+}
+
 func (db *database) GetOwnerID() (id int, err error) {
 	_, err = db.Goqu.From("users").Select("id").Where(goqu.C("owner").Eq(true)).ScanVal(&id)
 	return
@@ -111,6 +121,7 @@ func (db *database) UpdateUser(user *v1.User) (err error) {
 }
 
 // server methods
+
 func (db *database) GetServer(user *v1.User, machineIdentifier string) *v1.Server {
 	var s v1.Server
 	ex := goqu.Ex{"machine_identifier": machineIdentifier, "user_id": user.ID}
@@ -155,6 +166,7 @@ func (db *database) UpdateServer(server *v1.Server) {
 }
 
 // library methods
+
 func (db *database) GetLibrary(user *v1.User, uuid string) *v1.Library {
 	var library v1.Library
 	ok, err := db.Goqu.From("libraries").Where(goqu.Ex{"uuid": uuid, "user_id": user.ID}).ScanStruct(&library)
@@ -213,6 +225,7 @@ func (db *database) UpdateLibrary(library *v1.Library) {
 }
 
 // series methods
+
 func (db *database) GetOneSeries(user *v1.User, ratingKey int) *v1.Series {
 	var series v1.Series
 	ok, err := db.Goqu.From("series").Where(goqu.Ex{"rating_key": ratingKey, "user_id": user.ID}).ScanStruct(&series)

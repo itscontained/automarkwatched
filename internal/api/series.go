@@ -24,7 +24,7 @@ func getSeries(w http.ResponseWriter, r *http.Request) {
 		ServerError(w)
 		return
 	}
-	render.JSON(w, r, &user.Libraries)
+	render.JSON(w, r, &user.Series)
 }
 
 func PullSeries(user *v1.User) error {
@@ -89,6 +89,33 @@ func SaveSeries(user *v1.User) (map[string]int, error) {
 	return msg, nil
 }
 
+func SaveOwnerSeries(owner *v1.User) error {
+	missing := make(map[int]*v1.Series)
+	savedOwnerSeries, err := db.GetOwnerSeries()
+	if err != nil {
+		return err
+	}
+
+	for i := range owner.Series {
+		if _, ok := savedOwnerSeries[i]; !ok {
+			owner.Series[i].Enabled = true
+			missing[i] = owner.Series[i]
+			continue
+		}
+		if savedOwnerSeries[i].Update(owner.Series[i]) {
+			db.UpdateSeries(savedOwnerSeries[i])
+		}
+	}
+
+	if len(missing) > 0 {
+		err = db.AddSeries(missing)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func scrobbleSeries(w http.ResponseWriter, r *http.Request) {
 	user := GetContextUser(r)
 	scrobbleString := r.URL.Query().Get("scrobble")
@@ -112,7 +139,6 @@ func scrobbleSeries(w http.ResponseWriter, r *http.Request) {
 		}
 		ratingKeys = append(ratingKeys, v)
 	}
-
 	err = db.UpdateSeriesScrobble(user, ratingKeys, scrobble)
 	if err != nil {
 		log.Error(err)

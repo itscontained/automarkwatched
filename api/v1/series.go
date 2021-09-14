@@ -11,7 +11,8 @@ type Series struct {
 	ContentRating string `json:"contentRating,omitempty" db:"content_rating"`
 	Year          int    `json:"year" db:"year"`
 	Studio        string `json:"studio" db:"studio"`
-	Scrobble      bool   `db:"scrobble"`
+	GUID          string `json:"guid" db:"guid"`
+	Scrobble      bool   `json:"scrobble" db:"scrobble"`
 	Enabled       bool   `json:"enabled" db:"enabled"`
 	// User key map
 	UserID int `json:"user_id" db:"user_id"`
@@ -30,6 +31,7 @@ func newSeries(u *User, serverID, libraryUUID string, s *plex.Series) *Series {
 		Title:         s.Title,
 		ContentRating: s.ContentRating,
 		Year:          s.Year,
+		GUID:          s.GUID,
 		Scrobble:      false,
 		Enabled:       true,
 		Studio:        s.Studio,
@@ -96,20 +98,57 @@ func (s *Series) update(s2 *plex.Series) bool {
 		s.Year = s2.Year
 		updated = true
 	}
-	if s.ContentRating != s2.ContentRating {
-		s.ContentRating = s2.ContentRating
+	if s.GUID != s2.GUID {
+		s.GUID = s2.GUID
+		updated = true
+	}
+	return updated
+}
+
+func (s *Series) Update(s2 *Series) bool {
+	updated := false
+	if s.Title != s2.Title {
+		s.Title = s2.Title
+		updated = true
+	}
+	if s.RatingKey != s2.RatingKey {
+		s.RatingKey = s2.RatingKey
+		updated = true
+	}
+	if s.Studio != s2.Studio {
+		s.Studio = s2.Studio
 		updated = true
 	}
 	if s.ContentRating != s2.ContentRating {
 		s.ContentRating = s2.ContentRating
 		updated = true
 	}
-	if s.ContentRating != s2.ContentRating {
-		s.ContentRating = s2.ContentRating
+	if s.Year != s2.Year {
+		s.Year = s2.Year
 		updated = true
 	}
-	if s.ContentRating != s2.ContentRating {
-		s.ContentRating = s2.ContentRating
+	if s.GUID != s2.GUID {
+		s.GUID = s2.GUID
+		updated = true
+	}
+	if s.Enabled != s2.Enabled {
+		s.Enabled = s2.Enabled
+		updated = true
+	}
+	if s.Scrobble != s2.Scrobble {
+		s.Scrobble = s2.Scrobble
+		updated = true
+	}
+	if s.UserID != s2.UserID {
+		s.UserID = s2.UserID
+		updated = true
+	}
+	if s.ServerID != s2.ServerID {
+		s.ServerID = s2.ServerID
+		updated = true
+	}
+	if s.LibraryID != s2.LibraryID {
+		s.LibraryID = s2.LibraryID
 		updated = true
 	}
 	return updated

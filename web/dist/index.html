@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="DirtyCajunRice" />
+        <title>TV Shows - AutoMarkWatched</title>
+        <!-- Load Favicon-->
+        <link href="../src/material-admin-pro/dist/assets/img/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+        <!-- Load Material Icons from Google Fonts-->
+        <link href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp" rel="stylesheet" />
+        <!-- Load Simple DataTables Stylesheet-->
+        <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+        <!-- test datatables.net-->
+        <link href="https://cdn.datatables.net/1.11.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+        <!-- Roboto and Roboto Mono fonts from Google Fonts-->
+        <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet" />
+        <!-- Load main stylesheet-->
+        <link href="../src/material-admin-pro/dist/css/styles.css" rel="stylesheet" />
+    </head>
+    <body class="nav-fixed bg-dark drawer-toggled">
+        <!-- Top app bar navigation menu-->
+        <nav class="top-app-bar navbar navbar-expand navbar-dark bg-dark">
+            <div class="container-fluid px-4">
+                <!-- Navbar brand-->
+                <a class="navbar-brand me-auto" href="index.html"><div class="text-uppercase font-monospace">AutoMarkWatched</div></a>
+                <!-- Navbar items-->
+                <div class="d-flex align-items-center mx-3 me-lg-0">
+                    <!-- Navbar buttons-->
+                    <div class="d-flex">
+                        <!-- User profile dropdown-->
+                        <div class="dropdown">
+                            <button class="btn btn-lg btn-icon dropdown-toggle" id="dropdownMenuProfile" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="material-icons">person</i></button>
+                            <ul class="dropdown-menu dropdown-menu-end mt-3" aria-labelledby="dropdownMenuProfile">
+                                <li>
+                                    <a class="dropdown-item" href="#!">
+                                        <i class="material-icons leading-icon">person</i>
+                                        <div class="me-3">Profile</div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#!">
+                                        <i class="material-icons leading-icon">settings</i>
+                                        <div class="me-3">Settings</div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#!">
+                                        <i class="material-icons leading-icon">help</i>
+                                        <div class="me-3">Help</div>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <a class="dropdown-item" href="#!">
+                                        <i class="material-icons leading-icon">logout</i>
+                                        <div class="me-3">Logout</div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <!-- Layout wrapper-->
+        <div id="layoutDrawer">
+            <!-- Layout navigation-->
+            <div id="layoutDrawer_nav">
+                <!-- Drawer navigation-->
+                <nav class="drawer accordion drawer-dark bg-dark" id="drawerAccordion"></nav>
+            </div>
+            <!-- Layout content-->
+            <div id="layoutDrawer_content">
+                <!-- Main page content-->
+                <main>
+                    <!-- Page header-->
+                    <header class="bg-primary">
+                        <div class="container-xl p-5">
+                            <div class="row align-items-center justify-content-between">
+                                <div class="col-12 col-md mb-4 mb-md-0">
+                                    <h1 class="mb-1 display-4 fw-500 text-white">TV Shows</h1>
+                                    <p class="lead mb-0 text-white">Peace and Quiet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    <div class="container-xl p-5">
+                        <div class="card card-raised mb-5">
+                            <div class="card-body p-4">
+                                <table id="tvShowsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Scrobble</th>
+                                            <th>RatingKey</th>
+                                            <th>Title</th>
+                                            <th>Year</th>
+                                            <th>Library</th>
+                                            <th>Server</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                <!-- Footer-->
+                <!-- Min-height is set inline to match the height of the drawer footer-->
+                <footer class="py-4 mt-auto border-top" style="min-height: 74px">
+                    <div class="container-xl px-5">
+                        <div class="d-flex flex-column flex-sm-row align-items-center justify-content-sm-between small">
+                            <div class="me-sm-2">Copyright &copy; DirtyCajunRice 2021</div>
+                            <div class="d-flex ms-sm-2">
+                                <a class="text-decoration-none" href="#!">Github</a>
+                                <!-- .mx-1 &middot;-->
+                                <!-- a.text-decoration-none(href='#!') Terms &amp; Conditions-->
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <!-- Load Bootstrap JS bundle-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <!-- Load global scripts-->
+        <script type="module" src="../src/material-admin-pro/dist/js/material.js"></script>
+        <script src="../src/material-admin-pro/dist/js/scripts.js"></script>
+        <!-- Load Utility modules-->
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+        <!-- Load Simple DataTables Scripts-->
+        <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+        <!-- test datatables.net-->
+        <script src="https://cdn.datatables.net/1.11.1/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.11.1/js/dataTables.bootstrap5.min.js" crossorigin="anonymous"></script>
+        <script src="../src/material-admin-pro/dist/js/datatables/tvShowsTable.js"></script>
+        <!-- Load Plex Scripts-->
+        <script src="../src/material-admin-pro/dist/js/custom/plex.js"></script>
+        <script src="../src/material-admin-pro/dist/js/custom/custom.js"></script>
+    </body>
+</html>

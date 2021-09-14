@@ -27,7 +27,7 @@ type Server struct {
 	p                 *plex.Server
 }
 
-func newServer(u *User, s *plex.Server) *Server {
+func newUserServer(u *User, s *plex.Server) *Server {
 	return &Server{
 		UserID:            u.ID,
 		Address:           s.Address,
@@ -96,7 +96,7 @@ func (u *User) AttachPlexServer(server *plex.Server) error {
 		return ErrNotApplicationOwned
 	}
 	if _, ok := u.Servers[server.MachineIdentifier]; !ok {
-		u.Servers[server.MachineIdentifier] = newServer(u, server)
+		u.Servers[server.MachineIdentifier] = newUserServer(u, server)
 		return nil
 	}
 	u.Servers[server.MachineIdentifier].update(server)

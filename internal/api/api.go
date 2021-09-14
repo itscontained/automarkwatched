@@ -77,6 +77,7 @@ func Start() {
 			})
 		})
 	})
+	r.Get("/status", status)
 
 	server = &http.Server{
 		Addr:    ":" + strconv.Itoa(App.APIPort),
@@ -117,6 +118,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, data)
 }
 
+func status(w http.ResponseWriter, r *http.Request) { render.JSON(w, r, GetServerStatus(App.OwnerID)) }
+
 func getUser(w http.ResponseWriter, r *http.Request) {
 	token, id, err := getContextUserData(r)
 	if err != nil {
@@ -142,7 +145,7 @@ func setUser(w http.ResponseWriter, r *http.Request) {
 	}
 	savedUser := db.GetUser(user.ID)
 	if savedUser == nil {
-		if err := user.GetRecursive(); err != nil {
+		if err := user.GetAll(); err != nil {
 			log.WithError(err).Error("problem getting user's plex data")
 			SendError(w, err)
 			return
@@ -170,7 +173,7 @@ func setUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusCreated), http.StatusCreated)
 	}
 	if err := db.UpdateUser(user); err != nil {
-		log.WithError(err).Error("problem updating  parsing json")
+		log.WithError(err).Error("problem updating parsing json")
 		return
 	}
 	render.NoContent(w, r)
@@ -292,4 +295,11 @@ func SaveUser(user *v1.User) error {
 		return err
 	}
 	return nil
+}
+
+func SaveOwnerAll(owner *v1.User) error {
+	if err := SaveOwnerLibraries(owner); err != nil {
+		return err
+	}
+	return SaveOwnerSeries(owner)
 }

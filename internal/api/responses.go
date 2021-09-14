@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
@@ -44,4 +45,20 @@ func ServerError(w http.ResponseWriter) {
 
 func SendError(w http.ResponseWriter, e error) {
 	http.Error(w, e.Error(), http.StatusInternalServerError)
+}
+
+type ServerStatus struct {
+	Date       time.Time `json:"date"`
+	Configured bool      `json:"configured"`
+}
+
+func GetServerStatus(ownerId int) ServerStatus {
+	configured := false
+	if ownerId > 0 {
+		configured = true
+	}
+	return ServerStatus{
+		Date:       time.Now(),
+		Configured: configured,
+	}
 }

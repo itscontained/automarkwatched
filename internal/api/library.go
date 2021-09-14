@@ -28,6 +28,7 @@ func PullLibraries(user *v1.User) error {
 	if err != nil {
 		return err
 	}
+
 	if user.Libraries == nil {
 		user.Libraries = make(map[string]*v1.Library)
 	}
@@ -54,6 +55,28 @@ func setLibraries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.JSON(w, r, &msg)
+}
+
+func SaveOwnerLibraries(owner *v1.User) error {
+	missing := make(map[string]*v1.Library)
+	savedOwnerLibraries, err := db.GetOwnerLibraries()
+	if err != nil {
+		return err
+	}
+
+	for i := range owner.Libraries {
+		if _, ok := savedOwnerLibraries[i]; !ok {
+			owner.Libraries[i].Enabled = true
+			missing[i] = owner.Libraries[i]
+		}
+	}
+	if len(missing) > 0 {
+		err = db.AddLibraries(missing)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func SaveLibraries(user *v1.User) (map[string]int, error) {

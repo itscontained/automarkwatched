@@ -46,6 +46,18 @@ const PlexServerObj = {
     ownerId: undefined,
 };
 
+// noinspection JSUnusedGlobalSymbols
+const PlexUserObj = {
+    id: undefined,
+    uuid: undefined,
+    username: undefined,
+    email: undefined,
+    thumb: undefined,
+    owner: undefined,
+    enabled: undefined,
+    auth_token: undefined,
+};
+
 (function ($) {
     "use strict";
 
@@ -75,11 +87,12 @@ const PlexServerObj = {
 
 function apiCall(endpoint, data) {
     let token = Cookies.get("X-Plex-Token")
+    let id = Cookies.get("X-Plex-ID")
     let opts = {
         type: "GET",
         url: `${window.location.protocol}//${window.location.hostname}:5309/api/v1/${endpoint}`,
         contentType: "application/json",
-        headers: {"X-Plex-Token": token}
+        headers: {"X-Plex-Token": token, "X-Plex-ID": id}
     }
     if (data !== undefined) {
         opts.type = "POST"
@@ -87,15 +100,19 @@ function apiCall(endpoint, data) {
     }
     return $.ajax(opts)
 }
+
 function plexLogin() {
     plexLoginButton.attr("disabled", true)
     plexLoginButton.children().toggle()
     let loginData = null
     if (Cookies.get("X-Plex-Token") !== undefined || Cookies.get("X-Plex-ID") !== undefined) {
-        getUser()
+        let user = Object.assign({}, PlexUserObj)
+        user.auth_token = Cookies.get("X-Plex-Token")
+        user.id = parseInt(Cookies.get("X-Plex-ID"))
+        getUser(user)
         return
     }
-    $.get( `${window.location.protocol}//${window.location.hostname}:5309/api/v1/login`).done((data) => {
+    $.get(`${window.location.protocol}//${window.location.hostname}:5309/api/v1/login`).done((data) => {
         loginData = data
         let features = "resizable,scrollbars,status,width=700,height=600"
         let ssoWindow
@@ -174,9 +191,11 @@ function pollSSOWindow(ssoWindow, loginData, mobile) {
 }
 
 function getUser(user) {
-    let token = Cookies.get("X-Plex-Token")
-    let id = Cookies.get("X-Plex-ID")
-    $.get(`${window.location.protocol}//${window.location.hostname}:5309/api/v1/user`, {"X-Plex-Token": token, "X-Plex-ID": id}).done((data) => {
+    user.auth_token = user.auth_token ? user.auth_token : Cookies.get("X-Plex-Token")
+    user.id = user.id ? user.id : Cookies.get("X-Plex-ID")
+    //let token = Cookies.get("X-Plex-Token")
+    //let id = Cookies.get("X-Plex-ID")
+    $.get(`${window.location.protocol}//${window.location.hostname}:5309/api/v1/user`, {"X-Plex-Token": user.auth_token, "X-Plex-ID": user.id}).done((data) => {
         if (window.location.pathname === "/setup") {
             let wizard1Content = $("#wizard1-content")
             wizard1Content.children("div.row-cols-1.collapse").collapse()
@@ -186,22 +205,19 @@ function getUser(user) {
             wizard1Content.find("h1").text(data.username)
             console.log(data)
             data.owner = true
-
         } else if (window.location.pathname === "/login") {
             window.location.href = "/"
         }
     }).fail((data, _, xhr) => {
         console.log(xhr)
-        if (xhr === "See Other" ) {
+        if (xhr === "See Other") {
             user.enabled = true
-            user.auth_token = user.authToken
-            console.log(user)
             $.ajax({
                 type: "POST",
                 url: `${window.location.protocol}//${window.location.hostname}:5309/api/v1/user`,
                 data: JSON.stringify(user),
                 contentType: "application/json",
-                headers: {"X-Plex-Token": token, "X-Plex-ID": id}
+                headers: {"X-Plex-Token": user.auth_token, "X-Plex-ID": user.id}
             }).done(() => {
                 window.location.href = "/"
             })
@@ -213,6 +229,7 @@ function plexLoadLibraries() {
     plexLoadLibrariesButton.attr("disabled", true)
     plexLoadLibrariesButton.children().toggle()
     apiCall("libraries").done((data) => {
+        console.log(data)
         for (const [uuid, library] of Object.entries(data)) {
             let t = $("#libraryItemTemplateInput").clone(true, true)
             t.find("input").data("object", library)

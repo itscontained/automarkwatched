@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS series (
 	year INTEGER NOT NULL,
     studio VARCHAR(120) NOT NULL,
     content_rating VARCHAR(80),
+	guid VARCHAR(120) NOT NULL default unknown,
 	enabled BOOLEAN NOT NULL,
     scrobble BOOLEAN NOT NULL DEFAULT 0,
     user_id INTEGER NOT NULL,

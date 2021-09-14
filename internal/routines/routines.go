@@ -18,7 +18,13 @@ var (
 )
 
 func Start() {
+	Scrobble()
 	_, err := Cron.AddFunc("* * * * *", Scrobble)
+	if err != nil {
+		log.Error(err)
+	}
+	SyncAvailableMedia()
+	_, err = Cron.AddFunc("*/30 * * * *", SyncAvailableMedia)
 	if err != nil {
 		log.Error(err)
 	}
@@ -78,6 +84,30 @@ func Scrobble() {
 				}
 			}
 		}
+	}
+	l.Info("job finished")
+}
+
+func SyncAvailableMedia() {
+	l := log.WithField("job", "SyncAvailableMedia")
+	l.Info("starting job")
+
+	owner := db.GetOwner().Attach()
+
+	err := api.PullAll(owner)
+	if err != nil {
+		l.WithError(err).Error("problem getting owner data")
+		return
+	}
+	err = owner.GetFromExisting()
+	if err != nil {
+		l.Error(err)
+		return
+	}
+	err = api.SaveOwnerAll(owner)
+	if err != nil {
+		l.Error(err)
+		return
 	}
 	l.Info("job finished")
 }

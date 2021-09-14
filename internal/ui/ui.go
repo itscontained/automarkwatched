@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -14,14 +15,13 @@ import (
 
 	"github.com/itscontained/automarkwatched/internal/api"
 	. "github.com/itscontained/automarkwatched/internal/config"
-	"github.com/itscontained/automarkwatched/internal/database"
 )
 
 var (
-	r         *chi.Mux
-	templates *template.Template
-	db        = database.DB
-	server    *http.Server
+	r          *chi.Mux
+	templates  *template.Template
+	server     *http.Server
+	registered = false
 )
 
 func Start() {
@@ -49,13 +49,14 @@ func Start() {
 		"process": "webserver",
 	})
 	r.Group(func(r chi.Router) {
+		r.Use(SetupRedirect)
 		r.Use(api.TokenContext)
 		r.Use(api.UserContext)
 		r.Get("/", index)
 	})
 	r.Route("/", func(r chi.Router) {
 		r.Get("/setup", setup)
-		r.Get("/login", login)
+		r.With(SetupRedirect).Get("/login", login)
 		r.With(middleware.NoCache).Get("/static/*", static)
 	})
 	templates, err = template.New("base").ParseGlob("web/dist/templates/*.tmpl")
@@ -124,4 +125,28 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data map[string]interfac
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error 500: %s", err.Error()), http.StatusInternalServerError)
 	}
+}
+
+func SetupRedirect(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !registered {
+			req, err := http.Get("http://localhost:5309/status")
+			if err != nil {
+				log.WithError(err).Error("Could not get server status")
+			}
+
+			var serverStatus api.ServerStatus
+			err = json.NewDecoder(req.Body).Decode(&serverStatus)
+			if err != nil {
+				log.WithError(err).Error("Could not unmarshal server status")
+			}
+
+			if !serverStatus.Configured {
+				http.Redirect(w, r, "/setup", http.StatusTemporaryRedirect)
+				return
+			}
+			registered = true
+		}
+		next.ServeHTTP(w, r)
+	})
 }
